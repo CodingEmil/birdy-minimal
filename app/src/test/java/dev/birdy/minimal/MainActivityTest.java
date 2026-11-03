@@ -39,12 +39,14 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.robolectric.annotation.GraphicsMode;
 import org.robolectric.annotation.Implementation;
 import org.robolectric.annotation.Implements;
 import org.robolectric.annotation.RealObject;
 
 // Drives the real MainActivity: swipes, typing and lifecycle, with fake installed apps.
 @RunWith(RobolectricTestRunner.class)
+@GraphicsMode(GraphicsMode.Mode.NATIVE) // real text measuring and drawing, so sizes match a phone
 @Config(sdk = 36, qualifiers = "w411dp-h891dp-xxhdpi", shadows = {MainActivityTest.FixedLabel.class, MainActivityTest.CountingStatusBar.class})
 public class MainActivityTest {
     // getLabel() runs an ICU visibility check that, depending on the Robolectric SDK jar, can reject every label
@@ -159,7 +161,7 @@ public class MainActivityTest {
         return shadowOf(context.getSystemService(InputMethodManager.class)).isSoftInputVisible();
     }
 
-    // Writes a PNG when run with -Dshots.dir=... and robolectric.graphicsMode=NATIVE; otherwise does nothing.
+    // Writes a PNG when run with -Dshots.dir=...; otherwise does nothing.
     private static void shot(MainActivity a, String name) throws Exception {
         if (System.getProperty("shots.dir") == null) return;
         View root = a.getWindow().getDecorView();
