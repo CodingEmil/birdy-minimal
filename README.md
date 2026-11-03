@@ -6,7 +6,7 @@ Ein minimaler Android-Launcher: schwarz-weiß, reines Schwarz für OLED, schnell
 
 - Große Uhr mit Datum, darunter bis zu 7 Lieblings-Apps
 - Unten links und rechts je eine App als Icon
-- Hochwischen öffnet alle Apps mit Suche (Enter startet den ersten Treffer)
+- Hochwischen öffnet alle Apps mit Suche (Enter startet den ersten Treffer), Herunterwischen die Benachrichtigungen
 - Lange drücken auf eine App: anheften, als Eck-Icon setzen, App-Info, deinstallieren
 - Optional: oft genutzte Apps oben in der Liste, Sortierung nach Installationsdatum, Tastatur gleich beim Hochwischen, Suchtreffer unten am Daumen, schwarzer Hintergrund für die App-Übersicht (Einstellungen in der Birdy-App)
 - Keine Libraries, keine Berechtigungs-Abfragen, APK unter 100 KB

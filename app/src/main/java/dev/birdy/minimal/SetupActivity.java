@@ -35,6 +35,7 @@ public class SetupActivity extends Activity {
         bindSwitch(R.id.newest, "newest", prefs);
         bindSwitch(R.id.type, "type", prefs);
         bindSwitch(R.id.bottom, "bottom", prefs);
+        bindSwitch(R.id.shade, "shade", prefs, true);
         findViewById(R.id.black_wallpaper).setOnClickListener(v -> new AlertDialog.Builder(this)
                 .setTitle("Hintergrund schwarz machen?")
                 .setMessage("Dein aktuelles Hintergrundbild wird durch Schwarz ersetzt. Der Sperrbildschirm bleibt, wie er ist.")
@@ -56,8 +57,12 @@ public class SetupActivity extends Activity {
     }
 
     private void bindSwitch(int id, String key, SharedPreferences prefs) {
+        bindSwitch(id, key, prefs, false);
+    }
+
+    private void bindSwitch(int id, String key, SharedPreferences prefs, boolean byDefault) {
         Switch view = findViewById(id);
-        view.setChecked(prefs.getBoolean(key, false));
+        view.setChecked(prefs.getBoolean(key, byDefault));
         view.setOnCheckedChangeListener((v, on) -> prefs.edit().putBoolean(key, on).apply());
     }
 

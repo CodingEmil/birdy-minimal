@@ -45,7 +45,7 @@ import org.robolectric.annotation.RealObject;
 
 // Drives the real MainActivity: swipes, typing and lifecycle, with fake installed apps.
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 36, qualifiers = "w411dp-h891dp-xxhdpi", shadows = MainActivityTest.FixedLabel.class)
+@Config(sdk = 36, qualifiers = "w411dp-h891dp-xxhdpi", shadows = {MainActivityTest.FixedLabel.class, MainActivityTest.CountingStatusBar.class})
 public class MainActivityTest {
     // getLabel() runs an ICU visibility check that, depending on the Robolectric SDK jar, can reject every label
     // and fall back to the package name. The test apps' names are plain text, so read them directly.
@@ -55,6 +55,15 @@ public class MainActivityTest {
 
         @Implementation
         protected CharSequence getLabel() { return real.getActivityInfo().nonLocalizedLabel; }
+    }
+
+    // Robolectric does not track expandNotificationsPanel(), so count the calls here.
+    @Implements(value = android.app.StatusBarManager.class, isInAndroidSdk = false)
+    public static class CountingStatusBar {
+        static int expanded;
+
+        @Implementation
+        protected void expandNotificationsPanel() { expanded++; }
     }
 
     private static final String[] LABELS = {
@@ -71,6 +80,7 @@ public class MainActivityTest {
         context = RuntimeEnvironment.getApplication();
         prefs = context.getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE);
         prefs.edit().clear().commit();
+        CountingStatusBar.expanded = 0;
     }
 
     private void installApps(String... labels) throws Exception {
@@ -265,6 +275,60 @@ public class MainActivityTest {
         assertEquals(View.INVISIBLE, a.findViewById(R.id.drawer).getVisibility());
         swipeUp(a);
         assertTrue("next swipe opens it again", keyboardShown());
+    }
+
+    // --- Swipe down for notifications ---
+
+    @Test
+    public void swipeDownOnHomeOpensNotificationsOnce() throws Exception {
+        installApps(LABELS);
+        MainActivity a = start().get();
+        swipe(a, 900, 1800);
+        assertEquals(1, CountingStatusBar.expanded);
+        assertEquals("the app list stays closed", View.INVISIBLE, a.findViewById(R.id.drawer).getVisibility());
+        assertEquals(1f, a.findViewById(R.id.home).getAlpha(), 0.001f);
+    }
+
+    @Test
+    public void swipeDownDoesNothingWhenSettingOff() throws Exception {
+        prefs.edit().putBoolean("shade", false).commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        swipe(a, 900, 1800);
+        assertEquals(0, CountingStatusBar.expanded);
+    }
+
+    @Test
+    public void swipeDownInOpenListClosesItInsteadOfNotifications() throws Exception {
+        installApps(LABELS);
+        MainActivity a = start().get();
+        swipeUp(a);
+        swipe(a, 600, 1500);
+        assertEquals(0, CountingStatusBar.expanded);
+        assertEquals(View.INVISIBLE, a.findViewById(R.id.drawer).getVisibility());
+        swipe(a, 900, 1800); // now on home again
+        assertEquals(1, CountingStatusBar.expanded);
+    }
+
+    @Test
+    public void tapAndSwipeUpDoNotOpenNotifications() throws Exception {
+        installApps(LABELS);
+        MainActivity a = start().get();
+        swipe(a, 1000, 1005); // a tap with a tiny wobble
+        swipeUp(a);
+        assertEquals(0, CountingStatusBar.expanded);
+    }
+
+    @Test
+    public void sidewaysSwipeDoesNotOpenNotifications() throws Exception {
+        installApps(LABELS);
+        MainActivity a = start().get();
+        long t = SystemClock.uptimeMillis();
+        a.dispatchTouchEvent(MotionEvent.obtain(t, t, MotionEvent.ACTION_DOWN, 200, 1000, 0));
+        a.dispatchTouchEvent(MotionEvent.obtain(t, t + 20, MotionEvent.ACTION_MOVE, 600, 1060, 0));
+        a.dispatchTouchEvent(MotionEvent.obtain(t, t + 40, MotionEvent.ACTION_UP, 900, 1100, 0));
+        idle();
+        assertEquals(0, CountingStatusBar.expanded);
     }
 
     // --- Search results position ---

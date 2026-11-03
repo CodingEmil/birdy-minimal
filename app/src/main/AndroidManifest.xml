@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
     <!-- For the optional "black wallpaper" setting (install-time, no prompt). -->
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
+    <!-- Swipe down on home opens the notification shade (install-time, no prompt). -->
+    <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
 
     <!-- Android 11+ package visibility: every app with a launcher entry, plus other home apps
          so SetupActivity can tell whether Birdy is the default. -->

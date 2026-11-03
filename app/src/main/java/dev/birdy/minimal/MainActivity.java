@@ -51,7 +51,7 @@ import java.util.Locale;
 import java.util.Map;
 
 public class MainActivity extends Activity {
-    static final String PREFS = "birdy"; // shared with SetupActivity, which edits the settings keys "top", "newest", "type" and "bottom"
+    static final String PREFS = "birdy"; // shared with SetupActivity, which edits the settings keys "top", "newest", "type", "bottom" and "shade"
     private static final int MAX_FAVORITES = 7;
     private static final int TOP_COUNT = 5;
     private static final long TOP_WINDOW_MS = 3L * 24 * 60 * 60 * 1000; // "most used" looks back 3 days
@@ -81,7 +81,7 @@ public class MainActivity extends Activity {
     private ValueAnimator settle;
     private final VelocityTracker velocity = VelocityTracker.obtain();
     private float downX, downY, downProgress;
-    private boolean dragging, listAtTop;
+    private boolean dragging, listAtTop, shadePulled;
     private int touchSlop;
     private float dragDistance, flingVelocity, density;
 
@@ -214,10 +214,21 @@ public class MainActivity extends Activity {
             downProgress = progress;
             listAtTop = !list.canScrollVertically(-1);
             dragging = false;
+            shadePulled = false;
             velocity.clear();
         }
         velocity.addMovement(ev);
         float dy = ev.getY() - downY;
+
+        // Down on the home screen pulls the notification shade, as on Pixel phones. The rest of the gesture is ours.
+        if (shadePulled) return true;
+        if (!dragging && !drawerOpen && progress == 0 && action == MotionEvent.ACTION_MOVE
+                && dy > touchSlop && dy > Math.abs(ev.getX() - downX) && prefs.getBoolean("shade", true)) {
+            shadePulled = true;
+            cancelChildTouch(ev);
+            expandNotifications();
+            return true;
+        }
 
         if (!dragging && action == MotionEvent.ACTION_MOVE
                 && Math.abs(dy) > touchSlop && Math.abs(dy) > Math.abs(ev.getX() - downX)
@@ -227,10 +238,7 @@ public class MainActivity extends Activity {
             dy = 0;
             if (settle != null) settle.cancel();
             if (drawerOpen) hideKeyboard();
-            MotionEvent cancel = MotionEvent.obtain(ev);
-            cancel.setAction(MotionEvent.ACTION_CANCEL); // children drop this touch, so no tap or scroll fires
-            super.dispatchTouchEvent(cancel);
-            cancel.recycle();
+            cancelChildTouch(ev);
         }
         if (!dragging) return super.dispatchTouchEvent(ev);
 
@@ -242,6 +250,23 @@ public class MainActivity extends Activity {
             animateTo(Math.abs(vy) > flingVelocity ? vy < 0 : progress > 0.5f);
         }
         return true;
+    }
+
+    // Children drop this touch, so no tap, long press or scroll fires.
+    private void cancelChildTouch(MotionEvent ev) {
+        MotionEvent cancel = MotionEvent.obtain(ev);
+        cancel.setAction(MotionEvent.ACTION_CANCEL);
+        super.dispatchTouchEvent(cancel);
+        cancel.recycle();
+    }
+
+    // Not public API, but what launchers use; needs EXPAND_STATUS_BAR, which is granted at install without a prompt.
+    private void expandNotifications() {
+        try {
+            Object statusBar = getSystemService("statusbar");
+            Class.forName("android.app.StatusBarManager").getMethod("expandNotificationsPanel").invoke(statusBar);
+        } catch (ReflectiveOperationException | RuntimeException ignored) { // a device that blocks it: the swipe does nothing
+        }
     }
 
     private void animateTo(boolean open) {
