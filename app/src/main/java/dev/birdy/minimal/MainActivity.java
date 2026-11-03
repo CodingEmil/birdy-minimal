@@ -131,16 +131,11 @@ public class MainActivity extends Activity {
         right = findViewById(R.id.right);
 
         adapter = new ArrayAdapter<App>(this, R.layout.item) {
-            // Rows are recycled, so every row sets or clears the highlight.
+            // While searching, the top match stays white and the others turn grey. Rows are recycled, so set it every time.
             @Override public View getView(int pos, View convert, ViewGroup parent) {
                 TextView row = (TextView) super.getView(pos, convert, parent);
-                boolean best = getItem(pos) == bestMatch;
-                row.setBackgroundResource(best ? R.drawable.best : 0);
-                // A background brings its own padding; keep the row's, so the name never shifts (item.xml: 32dp, 11dp).
-                int h = Math.round(32 * density), v = Math.round(11 * density);
-                row.setPaddingRelative(h, v, h, v);
-                row.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, best ? R.drawable.ic_enter : 0, 0);
-                row.setFontVariationSettings(best ? "'wght' 500" : "'wght' 350");
+                boolean dim = bestMatch != null && getItem(pos) != bestMatch;
+                row.setTextColor(getColorStateList(dim ? R.color.item_text_dim : R.color.item_text));
                 return row;
             }
         };

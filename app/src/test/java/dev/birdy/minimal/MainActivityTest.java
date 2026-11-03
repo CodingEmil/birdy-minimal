@@ -445,18 +445,21 @@ public class MainActivityTest {
         assertTrue(prefs.getString("launches", "").contains("com.example.signal/"));
     }
 
-    // The row Enter would open, or null.
+    // The row Enter would open: the only white one among grey ones. Null when no row is grey (not searching).
     private static String highlighted(MainActivity a) {
         ListView list = a.findViewById(R.id.list);
-        String found = null;
+        List<String> white = new ArrayList<>();
+        int grey = 0;
         for (int i = 0; i < list.getChildCount(); i++) {
-            View row = list.getChildAt(i);
-            if (row instanceof android.widget.TextView && row.getBackground() != null) {
-                if (found != null) throw new AssertionError("more than one highlighted row");
-                found = ((android.widget.TextView) row).getText().toString();
-            }
+            if (!(list.getChildAt(i) instanceof android.widget.TextView)) continue;
+            android.widget.TextView row = (android.widget.TextView) list.getChildAt(i);
+            if (row.getText().length() == 0) continue;
+            if (row.getCurrentTextColor() == android.graphics.Color.WHITE) white.add(row.getText().toString());
+            else grey++;
         }
-        return found;
+        if (grey == 0 && white.size() > 1) return null;
+        if (white.size() > 1) throw new AssertionError("more than one white row: " + white);
+        return white.isEmpty() ? null : white.get(0);
     }
 
     @Test
@@ -467,9 +470,9 @@ public class MainActivityTest {
         assertEquals("nothing highlighted without a search", null, highlighted(a));
         type(a, "s");
         assertEquals("Signal", highlighted(a));
+        shot(a, "7-highlight-top");
         type(a, "sp");
         assertEquals("Spotify", highlighted(a));
-        shot(a, "7-highlight-top");
         type(a, "");
         assertEquals(null, highlighted(a));
     }
@@ -485,9 +488,8 @@ public class MainActivityTest {
         ListView list = a.findViewById(R.id.list);
         assertEquals("the highlighted row is the one right above the search field",
                 "K-9 Mail", ((android.widget.TextView) list.getChildAt(list.getChildCount() - 1)).getText().toString());
-        View best = list.getChildAt(list.getChildCount() - 1), other = list.getChildAt(list.getChildCount() - 2);
-        assertEquals("name stays aligned", other.getPaddingLeft(), best.getPaddingLeft());
-        assertEquals("row keeps its height", other.getHeight(), best.getHeight());
+        android.widget.TextView other = (android.widget.TextView) list.getChildAt(list.getChildCount() - 2);
+        assertEquals("the other matches are grey", 0xFF808080, other.getCurrentTextColor());
         shot(a, "8-highlight-bottom");
     }
 
