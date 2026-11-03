@@ -27,6 +27,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.animation.PathInterpolator;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -118,6 +119,11 @@ public class MainActivity extends Activity {
         list.setOnItemLongClickListener((parent, view, pos, id) -> {
             showMenu(view, adapter.getItem(pos));
             return true;
+        });
+        DotScrollbar rail = findViewById(R.id.rail);
+        list.setOnScrollListener(new AbsListView.OnScrollListener() { // also fires after layout, e.g. when a search filters
+            @Override public void onScrollStateChanged(AbsListView view, int state) {}
+            @Override public void onScroll(AbsListView view, int first, int visible, int total) { rail.show(first, visible, total); }
         });
 
         search = findViewById(R.id.search);

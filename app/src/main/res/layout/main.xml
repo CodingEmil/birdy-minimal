@@ -114,19 +114,33 @@
         android:orientation="vertical"
         android:visibility="invisible">
 
-        <ListView
-            android:id="@+id/list"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
-            android:clipToPadding="false"
-            android:divider="@null"
-            android:fadingEdgeLength="72dp"
-            android:listSelector="@android:color/transparent"
-            android:overScrollMode="never"
-            android:paddingVertical="24dp"
-            android:requiresFadingEdge="vertical"
-            android:scrollbars="none" />
+            android:layout_weight="1">
+
+            <ListView
+                android:id="@+id/list"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:clipToPadding="false"
+                android:divider="@null"
+                android:fadingEdgeLength="72dp"
+                android:listSelector="@android:color/transparent"
+                android:overScrollMode="never"
+                android:paddingVertical="24dp"
+                android:requiresFadingEdge="vertical"
+                android:scrollbars="none" />
+
+            <!-- Sits inside the rows' 32dp right padding, so it never covers a name. Not clickable: touches reach the list. -->
+            <dev.birdy.minimal.DotScrollbar
+                android:id="@+id/rail"
+                android:layout_width="24dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="end"
+                android:paddingVertical="40dp"
+                android:visibility="invisible" />
+        </FrameLayout>
 
         <EditText
             android:id="@+id/search"
