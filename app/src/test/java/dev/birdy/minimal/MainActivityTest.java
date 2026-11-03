@@ -39,11 +39,24 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.android.controller.ActivityController;
 import org.robolectric.annotation.Config;
+import org.robolectric.annotation.Implementation;
+import org.robolectric.annotation.Implements;
+import org.robolectric.annotation.RealObject;
 
 // Drives the real MainActivity: swipes, typing and lifecycle, with fake installed apps.
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 36, qualifiers = "w411dp-h891dp-xxhdpi")
+@Config(sdk = 36, qualifiers = "w411dp-h891dp-xxhdpi", shadows = MainActivityTest.FixedLabel.class)
 public class MainActivityTest {
+    // getLabel() runs an ICU visibility check that, depending on the Robolectric SDK jar, can reject every label
+    // and fall back to the package name. The test apps' names are plain text, so read them directly.
+    @Implements(LauncherActivityInfo.class)
+    public static class FixedLabel {
+        @RealObject private LauncherActivityInfo real;
+
+        @Implementation
+        protected CharSequence getLabel() { return real.getActivityInfo().nonLocalizedLabel; }
+    }
+
     private static final String[] LABELS = {
             "Kamera", "Kalender", "Kontakte", "Karten", "Kindle", "Klarna", "K-9 Mail", "Spotify", "Signal",
             "Slack", "Einstellungen", "Uhr", "WhatsApp", "Wetter", "Telegram", "Threema", "YouTube", "Gmail",
