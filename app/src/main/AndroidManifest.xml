@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Lets the long-press menu open the system uninstall dialog (install-time, no prompt). -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+
     <!-- Android 11+ package visibility: every app with a launcher entry, plus other home apps
          so SetupActivity can tell whether Birdy is the default. -->
     <queries>

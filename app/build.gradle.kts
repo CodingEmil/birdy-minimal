@@ -14,7 +14,8 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toInt() ?: 1 // grows with every CI build, so updates install
-        versionName = "1.0"
+        // "v1.2" tag builds become "1.2"; branch and local builds are "dev"
+        versionName = System.getenv("GITHUB_REF_NAME")?.takeIf { System.getenv("GITHUB_REF_TYPE") == "tag" }?.removePrefix("v") ?: "dev"
     }
 
     compileOptions {

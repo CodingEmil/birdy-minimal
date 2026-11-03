@@ -4,6 +4,7 @@ import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.LauncherActivityInfo;
 import android.content.pm.LauncherApps;
 import android.graphics.Color;
@@ -12,6 +13,7 @@ import android.graphics.ColorMatrixColorFilter;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.AdaptiveIconDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Process;
@@ -315,6 +317,7 @@ public class MainActivity extends Activity {
         menu.add(0, 2, 0, isLeft ? "Unten links entfernen" : "Unten links");
         menu.add(0, 3, 0, isRight ? "Unten rechts entfernen" : "Unten rechts");
         menu.add(0, 4, 0, "App-Info");
+        if ((app.info.getApplicationInfo().flags & ApplicationInfo.FLAG_SYSTEM) == 0) menu.add(0, 5, 0, "Deinstallieren");
         popup.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case 1:
@@ -329,6 +332,10 @@ public class MainActivity extends Activity {
                     break;
                 case 4:
                     launcherApps.startAppDetailsActivity(app.info.getComponentName(), app.info.getUser(), null, null);
+                    break;
+                case 5: // system dialog; unlike App-Info it also works for Birdy while Birdy is the active launcher
+                    startActivity(new Intent(Intent.ACTION_DELETE,
+                            Uri.fromParts("package", app.info.getComponentName().getPackageName(), null)));
                     break;
             }
             renderHome();
