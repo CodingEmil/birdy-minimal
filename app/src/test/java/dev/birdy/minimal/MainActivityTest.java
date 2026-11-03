@@ -42,7 +42,7 @@ import org.robolectric.annotation.Config;
 
 // Drives the real MainActivity: swipes, typing and lifecycle, with fake installed apps.
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 35, qualifiers = "w411dp-h891dp-xxhdpi")
+@Config(sdk = 36, qualifiers = "w411dp-h891dp-xxhdpi")
 public class MainActivityTest {
     private static final String[] LABELS = {
             "Kamera", "Kalender", "Kontakte", "Karten", "Kindle", "Klarna", "K-9 Mail", "Spotify", "Signal",
