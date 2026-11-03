@@ -443,6 +443,78 @@ public class MainActivityTest {
         assertTrue(prefs.getString("launches", "").contains("com.example.signal/"));
     }
 
+    // The row Enter would open, or null.
+    private static String highlighted(MainActivity a) {
+        ListView list = a.findViewById(R.id.list);
+        String found = null;
+        for (int i = 0; i < list.getChildCount(); i++) {
+            View row = list.getChildAt(i);
+            if (row instanceof android.widget.TextView && row.getBackground() != null) {
+                if (found != null) throw new AssertionError("more than one highlighted row");
+                found = ((android.widget.TextView) row).getText().toString();
+            }
+        }
+        return found;
+    }
+
+    @Test
+    public void topMatchIsHighlightedAtTheTop() throws Exception {
+        installApps(LABELS);
+        MainActivity a = start().get();
+        swipeUp(a);
+        assertEquals("nothing highlighted without a search", null, highlighted(a));
+        type(a, "s");
+        assertEquals("Signal", highlighted(a));
+        type(a, "sp");
+        assertEquals("Spotify", highlighted(a));
+        shot(a, "7-highlight-top");
+        type(a, "");
+        assertEquals(null, highlighted(a));
+    }
+
+    @Test
+    public void topMatchIsHighlightedAtTheBottom() throws Exception {
+        prefs.edit().putBoolean("bottom", true).commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        swipeUp(a);
+        type(a, "k");
+        assertEquals("K-9 Mail", highlighted(a));
+        ListView list = a.findViewById(R.id.list);
+        assertEquals("the highlighted row is the one right above the search field",
+                "K-9 Mail", ((android.widget.TextView) list.getChildAt(list.getChildCount() - 1)).getText().toString());
+        View best = list.getChildAt(list.getChildCount() - 1), other = list.getChildAt(list.getChildCount() - 2);
+        assertEquals("name stays aligned", other.getPaddingLeft(), best.getPaddingLeft());
+        assertEquals("row keeps its height", other.getHeight(), best.getHeight());
+        shot(a, "8-highlight-bottom");
+    }
+
+    @Test
+    public void enterOpensTheHighlightedApp() throws Exception {
+        prefs.edit().putBoolean("top", true).putBoolean("bottom", true).commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        swipeUp(a);
+        type(a, "wh");
+        assertEquals("WhatsApp", highlighted(a));
+        ((EditText) a.findViewById(R.id.search)).onEditorAction(EditorInfo.IME_ACTION_GO);
+        idle();
+        assertTrue(prefs.getString("launches", "").contains("com.example.whatsapp/"));
+    }
+
+    @Test
+    public void enterWithNoMatchDoesNothing() throws Exception {
+        prefs.edit().putBoolean("top", true).commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        swipeUp(a);
+        type(a, "xyz");
+        assertEquals(null, highlighted(a));
+        ((EditText) a.findViewById(R.id.search)).onEditorAction(EditorInfo.IME_ACTION_GO);
+        idle();
+        assertEquals("", prefs.getString("launches", ""));
+    }
+
     @Test
     public void noMatchesShowsEmptyList() throws Exception {
         prefs.edit().putBoolean("bottom", true).commit();

@@ -63,7 +63,7 @@ public class MainActivity extends Activity {
     private final Map<String, App> apps = new HashMap<>(); // by flattened ComponentName
     private final List<String> favorites = new ArrayList<>();
     private final List<App> all = new ArrayList<>(); // in list order; the adapter shows these or the search matches
-    private App bestMatch; // what Enter opens: the first search match, wherever it is shown
+    private App bestMatch; // what Enter opens and the list highlights: the first search match; null when not searching
     private ArrayAdapter<App> adapter;
     private ColorMatrixColorFilter grayscale;
     private Collator collator;
@@ -130,7 +130,20 @@ public class MainActivity extends Activity {
         left = findViewById(R.id.left);
         right = findViewById(R.id.right);
 
-        adapter = new ArrayAdapter<>(this, R.layout.item);
+        adapter = new ArrayAdapter<App>(this, R.layout.item) {
+            // Rows are recycled, so every row sets or clears the highlight.
+            @Override public View getView(int pos, View convert, ViewGroup parent) {
+                TextView row = (TextView) super.getView(pos, convert, parent);
+                boolean best = getItem(pos) == bestMatch;
+                row.setBackgroundResource(best ? R.drawable.best : 0);
+                // A background brings its own padding; keep the row's, so the name never shifts (item.xml: 32dp, 11dp).
+                int h = Math.round(32 * density), v = Math.round(11 * density);
+                row.setPaddingRelative(h, v, h, v);
+                row.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, best ? R.drawable.ic_enter : 0, 0);
+                row.setFontVariationSettings(best ? "'wght' 500" : "'wght' 350");
+                return row;
+            }
+        };
         list = findViewById(R.id.list);
         View header = getLayoutInflater().inflate(R.layout.top, list, false);
         topSection = header.findViewById(R.id.top);
@@ -160,7 +173,7 @@ public class MainActivity extends Activity {
         });
         // Enter on the keyboard opens the best match.
         search.setOnEditorActionListener((v, action, event) -> {
-            if (!search.getText().toString().trim().isEmpty() && bestMatch != null) launch(bestMatch);
+            if (bestMatch != null) launch(bestMatch);
             return true;
         });
 
@@ -343,8 +356,9 @@ public class MainActivity extends Activity {
             else if (rank == Search.WORD) later.add(app);
         }
         shown.addAll(later);
-        bestMatch = shown.isEmpty() ? null : shown.get(0);
-        boolean fromBottom = !query.trim().isEmpty() && prefs.getBoolean("bottom", false);
+        boolean searching = !query.trim().isEmpty();
+        bestMatch = searching && !shown.isEmpty() ? shown.get(0) : null;
+        boolean fromBottom = searching && prefs.getBoolean("bottom", false);
         if (fromBottom) Collections.reverse(shown);
         adapter.setNotifyOnChange(false);
         adapter.clear();
