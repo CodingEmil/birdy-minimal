@@ -1,0 +1,46 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write # to publish releases on tags
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Build release APK
+        env:
+          KEYSTORE_B64: ${{ secrets.BIRDY_KEYSTORE_B64 }}
+          BIRDY_KEYSTORE_PASSWORD: ${{ secrets.BIRDY_KEYSTORE_PASSWORD }}
+        run: |
+          # Without the secret (e.g. pull requests from forks) the build falls back to the debug key.
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/birdy.jks"
+            export BIRDY_KEYSTORE="$RUNNER_TEMP/birdy.jks"
+          fi
+          ./gradlew assembleRelease --no-daemon
+          mv app/build/outputs/apk/release/app-release.apk birdy.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: birdy-apk
+          path: birdy.apk
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" birdy.apk --title "Birdy $GITHUB_REF_NAME" --generate-notes

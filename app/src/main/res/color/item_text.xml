@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Press feedback: the text dims instead of a grey box. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="#59FFFFFF" android:state_pressed="true" />
+    <item android:color="#FFFFFFFF" />
+</selector>

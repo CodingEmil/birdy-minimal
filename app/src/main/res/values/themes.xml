@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pure #000 so OLED pixels stay off. Bar colors only matter below Android 15 (edge-to-edge there). -->
+    <style name="Theme.Birdy" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:colorBackground">@android:color/black</item>
+        <item name="android:statusBarColor">@android:color/black</item>
+        <item name="android:navigationBarColor">@android:color/black</item>
+        <item name="android:colorAccent">@android:color/white</item>
+        <item name="android:fontFamily">@font/outfit</item>
+        <item name="android:fontVariationSettings">"'wght' 400"</item>
+        <item name="android:popupMenuStyle">@style/Birdy.Popup</item>
+        <item name="android:textAppearanceLargePopupMenu">@style/Birdy.PopupText</item>
+        <item name="android:textAppearanceSmallPopupMenu">@style/Birdy.PopupText</item>
+    </style>
+
+    <style name="Birdy.Popup" parent="@android:style/Widget.Material.PopupMenu">
+        <item name="android:popupBackground">@drawable/popup</item>
+    </style>
+
+    <style name="Birdy.PopupText" parent="@android:style/TextAppearance.Material.Widget.PopupMenu.Large">
+        <item name="android:fontFamily">@font/outfit</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+</resources>

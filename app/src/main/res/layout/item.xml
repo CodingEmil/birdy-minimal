@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One app row, used both for the home favorites and the drawer list. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@null"
+    android:ellipsize="end"
+    android:fontVariationSettings="'wght' 350"
+    android:maxLines="1"
+    android:paddingHorizontal="32dp"
+    android:paddingVertical="11dp"
+    android:textColor="@color/item_text"
+    android:textSize="22sp" />
