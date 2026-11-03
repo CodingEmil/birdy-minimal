@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="32dp"
+        android:paddingTop="56dp"
+        android:paddingBottom="24dp">
+
+        <TextView
+            android:id="@+id/status"
+            style="@style/Birdy.Eyebrow"
+            android:layout_marginTop="0dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="-3dp"
+            android:fontVariationSettings="'wght' 250"
+            android:text="Birdy"
+            android:textColor="@android:color/white"
+            android:textSize="64sp" />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:layout_marginTop="16dp"
+            android:text="Birdy ist ein Launcher: Er ersetzt deinen Startbildschirm. Deshalb stellst du ihn in den Einstellungen als Startbildschirm-App ein."
+            android:textColor="#B3B3B3" />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="So wechselst du" />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:text="1.  Tippe unten auf den Button." />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:text="2.  Wähle Birdy als Startbildschirm-App." />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:text="3.  Drück die Home-Taste. Fertig." />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="So bedienst du Birdy" />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:text="Hochwischen öffnet alle Apps." />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:text="Lange drücken heftet eine App an oder legt sie unten in eine Ecke." />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:text="Zurückwechseln geht jederzeit hier." />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:minHeight="32dp" />
+
+        <Button
+            android:id="@+id/action"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="@drawable/button"
+            android:fontVariationSettings="'wght' 500"
+            android:stateListAnimator="@null"
+            android:textAllCaps="false"
+            android:textColor="@android:color/black"
+            android:textSize="17sp" />
+    </LinearLayout>
+</ScrollView>

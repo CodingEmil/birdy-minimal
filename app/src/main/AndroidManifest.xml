@@ -1,17 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Android 11+ package visibility: lets us see every app that has a launcher entry. -->
+    <!-- Android 11+ package visibility: every app with a launcher entry, plus other home apps
+         so SetupActivity can tell whether Birdy is the default. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.HOME" />
+        </intent>
     </queries>
 
     <application
+        android:icon="@mipmap/ic_launcher"
         android:label="Birdy"
         android:theme="@style/Theme.Birdy">
+
+        <!-- Own task affinity, so the singleTask home activity never lands inside this task. -->
+        <activity
+            android:name=".SetupActivity"
+            android:exported="true"
+            android:taskAffinity="dev.birdy.minimal.setup">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".MainActivity"
