@@ -33,6 +33,8 @@ public class SetupActivity extends Activity {
         SharedPreferences prefs = getSharedPreferences(MainActivity.PREFS, MODE_PRIVATE);
         bindSwitch(R.id.top_apps, "top", prefs);
         bindSwitch(R.id.newest, "newest", prefs);
+        bindSwitch(R.id.type, "type", prefs);
+        bindSwitch(R.id.bottom, "bottom", prefs);
         findViewById(R.id.black_wallpaper).setOnClickListener(v -> new AlertDialog.Builder(this)
                 .setTitle("Hintergrund schwarz machen?")
                 .setMessage("Dein aktuelles Hintergrundbild wird durch Schwarz ersetzt. Der Sperrbildschirm bleibt, wie er ist.")

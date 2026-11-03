@@ -44,13 +44,14 @@ import android.window.OnBackInvokedDispatcher;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 public class MainActivity extends Activity {
-    static final String PREFS = "birdy"; // shared with SetupActivity, which edits the settings keys "top" and "newest"
+    static final String PREFS = "birdy"; // shared with SetupActivity, which edits the settings keys "top", "newest", "type" and "bottom"
     private static final int MAX_FAVORITES = 7;
     private static final int TOP_COUNT = 5;
     private static final long TOP_WINDOW_MS = 3L * 24 * 60 * 60 * 1000; // "most used" looks back 3 days
@@ -61,6 +62,8 @@ public class MainActivity extends Activity {
     private SharedPreferences prefs;
     private final Map<String, App> apps = new HashMap<>(); // by flattened ComponentName
     private final List<String> favorites = new ArrayList<>();
+    private final List<App> all = new ArrayList<>(); // in list order; the adapter shows these or the search matches
+    private App bestMatch; // what Enter opens: the first match in list order, wherever it is shown
     private ArrayAdapter<App> adapter;
     private ColorMatrixColorFilter grayscale;
     private Collator collator;
@@ -93,6 +96,7 @@ public class MainActivity extends Activity {
     // Held in a field: SharedPreferences only keeps a weak reference to listeners.
     private final SharedPreferences.OnSharedPreferenceChangeListener settingsChanged = (p, key) -> {
         if ("top".equals(key) || "newest".equals(key)) load();
+        else if ("bottom".equals(key)) applySearch(true);
     };
 
     @Override
@@ -150,13 +154,13 @@ public class MainActivity extends Activity {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override public void afterTextChanged(Editable s) {
-                adapter.getFilter().filter(s);
+                applySearch(true);
                 renderTop(); // hidden while searching
             }
         });
-        // Enter on the keyboard opens the top match.
+        // Enter on the keyboard opens the best match.
         search.setOnEditorActionListener((v, action, event) -> {
-            if (search.length() > 0 && !adapter.isEmpty()) launch(adapter.getItem(0));
+            if (!search.getText().toString().trim().isEmpty() && bestMatch != null) launch(bestMatch);
             return true;
         });
 
@@ -242,6 +246,7 @@ public class MainActivity extends Activity {
 
     private void animateTo(boolean open) {
         drawerOpen = open;
+        if (open && prefs.getBoolean("type", false)) showKeyboard(); // rises together with the list
         if (!open) hideKeyboard();
         if (settle != null) settle.cancel();
         float target = open ? 1 : 0;
@@ -271,7 +276,13 @@ public class MainActivity extends Activity {
         if (p == 0 && search.length() > 0) search.setText("");
     }
 
+    private void showKeyboard() {
+        search.requestFocus();
+        search.post(() -> getSystemService(InputMethodManager.class).showSoftInput(search, InputMethodManager.SHOW_IMPLICIT));
+    }
+
     private void hideKeyboard() {
+        search.clearFocus();
         getSystemService(InputMethodManager.class).hideSoftInputFromWindow(search.getWindowToken(), 0);
     }
 
@@ -288,11 +299,28 @@ public class MainActivity extends Activity {
         sorted.sort(newest
                 ? (a, b) -> Long.compare(b.installed, a.installed)
                 : (a, b) -> collator.compare(a.label, b.label));
-        adapter.clear();
-        adapter.addAll(sorted);
-        adapter.getFilter().filter(search.getText()); // keep an active search applied
+        all.clear();
+        all.addAll(sorted);
+        applySearch(false); // keeps an active search applied, without moving the scroll position
         renderHome();
         renderTop();
+    }
+
+    // While searching with "bottom" on, matches stack up from the search field with the best one right above it,
+    // where the thumb is. Otherwise the list reads top-down as usual.
+    private void applySearch(boolean jump) {
+        String query = search.getText().toString();
+        List<App> shown = new ArrayList<>();
+        for (App app : all) if (Search.matches(app.label, query)) shown.add(app);
+        bestMatch = shown.isEmpty() ? null : shown.get(0);
+        boolean fromBottom = !query.trim().isEmpty() && prefs.getBoolean("bottom", false);
+        if (fromBottom) Collections.reverse(shown);
+        adapter.setNotifyOnChange(false);
+        adapter.clear();
+        adapter.addAll(shown);
+        list.setStackFromBottom(fromBottom);
+        adapter.notifyDataSetChanged();
+        if (jump) list.setSelection(fromBottom ? list.getCount() - 1 : 0);
     }
 
     // Keys of uninstalled apps stay saved but are skipped, so a pin survives app updates and reinstalls.

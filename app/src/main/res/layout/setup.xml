@@ -89,6 +89,26 @@
             style="@style/Birdy.Hint"
             android:text="Sortiert die Liste nach Installationsdatum statt alphabetisch." />
 
+        <Switch
+            android:id="@+id/type"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Beim Hochwischen gleich tippen" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Öffnet mit der App-Liste direkt die Tastatur, sodass du sofort suchen kannst." />
+
+        <Switch
+            android:id="@+id/bottom"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Suchtreffer unten" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Treffer stehen beim Suchen unten über dem Suchfeld, der beste ganz unten. So erreichst du sie gut mit dem Daumen." />
+
         <TextView
             android:id="@+id/black_wallpaper"
             style="@style/Birdy.Line"
