@@ -31,7 +31,7 @@ jobs:
             echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/birdy.jks"
             export BIRDY_KEYSTORE="$RUNNER_TEMP/birdy.jks"
           fi
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew testReleaseUnitTest assembleRelease --no-daemon
           mv app/build/outputs/apk/release/app-release.apk birdy.apk
 
       - uses: actions/upload-artifact@v7

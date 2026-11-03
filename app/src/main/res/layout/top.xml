@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- List header for the most used apps. The wrapper stays in the ListView; hiding the inner section collapses it to 0 height. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:id="@+id/top"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="4dp"
+            android:text="Oft genutzt" />
+
+        <LinearLayout
+            android:id="@+id/top_rows"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginHorizontal="32dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="14dp"
+            android:background="#2E2E2E" />
+    </LinearLayout>
+</FrameLayout>

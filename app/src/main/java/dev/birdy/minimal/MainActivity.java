@@ -27,6 +27,7 @@ import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewGroup;
 import android.view.animation.PathInterpolator;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AbsListView;
@@ -49,7 +50,10 @@ import java.util.Locale;
 import java.util.Map;
 
 public class MainActivity extends Activity {
+    static final String PREFS = "birdy"; // shared with SetupActivity, which edits the settings keys "top" and "newest"
     private static final int MAX_FAVORITES = 7;
+    private static final int TOP_COUNT = 5;
+    private static final long TOP_WINDOW_MS = 3L * 24 * 60 * 60 * 1000; // "most used" looks back 3 days
     private static final long SETTLE_MS = 340;
     private static final PathInterpolator SETTLE_CURVE = new PathInterpolator(0.2f, 0f, 0f, 1f);
 
@@ -59,8 +63,10 @@ public class MainActivity extends Activity {
     private final List<String> favorites = new ArrayList<>();
     private ArrayAdapter<App> adapter;
     private ColorMatrixColorFilter grayscale;
+    private Collator collator;
 
-    private View home, drawer, hint;
+    private View home, drawer, hint, topSection;
+    private LinearLayout topRows;
     private ListView list;
     private EditText search;
     private LinearLayout favoritesView;
@@ -84,12 +90,18 @@ public class MainActivity extends Activity {
         @Override public void onPackagesUnavailable(String[] pkgs, UserHandle user, boolean replacing) { load(); }
     };
 
+    // Held in a field: SharedPreferences only keeps a weak reference to listeners.
+    private final SharedPreferences.OnSharedPreferenceChangeListener settingsChanged = (p, key) -> {
+        if ("top".equals(key) || "newest".equals(key)) load();
+    };
+
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         setContentView(R.layout.main);
         launcherApps = getSystemService(LauncherApps.class);
-        prefs = getSharedPreferences("birdy", MODE_PRIVATE);
+        prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
+        collator = Collator.getInstance(); // locale-aware, so Ä/Ö/Ü sort next to A/O/U
         String saved = prefs.getString("favorites", "");
         if (!saved.isEmpty()) favorites.addAll(Arrays.asList(saved.split("\n")));
 
@@ -116,10 +128,15 @@ public class MainActivity extends Activity {
 
         adapter = new ArrayAdapter<>(this, R.layout.item);
         list = findViewById(R.id.list);
+        View header = getLayoutInflater().inflate(R.layout.top, list, false);
+        topSection = header.findViewById(R.id.top);
+        topRows = header.findViewById(R.id.top_rows);
+        list.addHeaderView(header, null, false);
         list.setAdapter(adapter);
-        list.setOnItemClickListener((parent, view, pos, id) -> launch(adapter.getItem(pos)));
+        // Positions include the header, so ask the list rather than the adapter.
+        list.setOnItemClickListener((parent, view, pos, id) -> launch((App) parent.getItemAtPosition(pos)));
         list.setOnItemLongClickListener((parent, view, pos, id) -> {
-            showMenu(view, adapter.getItem(pos));
+            showMenu(view, (App) parent.getItemAtPosition(pos));
             return true;
         });
         DotScrollbar rail = findViewById(R.id.rail);
@@ -132,7 +149,10 @@ public class MainActivity extends Activity {
         search.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
-            @Override public void afterTextChanged(Editable s) { adapter.getFilter().filter(s); }
+            @Override public void afterTextChanged(Editable s) {
+                adapter.getFilter().filter(s);
+                renderTop(); // hidden while searching
+            }
         });
         // Enter on the keyboard opens the top match.
         search.setOnEditorActionListener((v, action, event) -> {
@@ -148,10 +168,12 @@ public class MainActivity extends Activity {
 
         load();
         launcherApps.registerCallback(packagesChanged);
+        prefs.registerOnSharedPreferenceChangeListener(settingsChanged);
     }
 
     @Override
     protected void onDestroy() {
+        prefs.unregisterOnSharedPreferenceChangeListener(settingsChanged);
         launcherApps.unregisterCallback(packagesChanged);
         super.onDestroy();
     }
@@ -233,7 +255,10 @@ public class MainActivity extends Activity {
 
     // Fade-through: home fades out and recedes first, then the list fades in while rising, so texts never overlap.
     private void setProgress(float p) {
-        if (p > 0 && drawer.getVisibility() != View.VISIBLE) list.setSelection(0);
+        if (p > 0 && drawer.getVisibility() != View.VISIBLE) {
+            renderTop(); // counts changed since the last open
+            list.setSelection(0);
+        }
         progress = p;
         drawer.setVisibility(p > 0 ? View.VISIBLE : View.INVISIBLE);
         drawer.setAlpha(Math.max(0, (p - 0.3f) / 0.7f));
@@ -251,19 +276,23 @@ public class MainActivity extends Activity {
     }
 
     private void load() {
+        boolean newest = prefs.getBoolean("newest", false);
         List<App> sorted = new ArrayList<>();
         apps.clear();
         for (LauncherActivityInfo info : launcherApps.getActivityList(null, Process.myUserHandle())) {
             App app = new App(info);
+            if (newest) app.installed = info.getFirstInstallTime(); // a binder call each, so only when sorting by it
             sorted.add(app);
             apps.put(app.key, app);
         }
-        Collator collator = Collator.getInstance(); // locale-aware, so Ä/Ö/Ü sort next to A/O/U
-        sorted.sort((a, b) -> collator.compare(a.label, b.label));
+        sorted.sort(newest
+                ? (a, b) -> Long.compare(b.installed, a.installed)
+                : (a, b) -> collator.compare(a.label, b.label));
         adapter.clear();
         adapter.addAll(sorted);
         adapter.getFilter().filter(search.getText()); // keep an active search applied
         renderHome();
+        renderTop();
     }
 
     // Keys of uninstalled apps stay saved but are skipped, so a pin survives app updates and reinstalls.
@@ -272,16 +301,37 @@ public class MainActivity extends Activity {
         for (String key : favorites) {
             App app = apps.get(key);
             if (app == null) continue;
-            TextView row = (TextView) getLayoutInflater().inflate(R.layout.item, favoritesView, false);
-            row.setText(app.label);
+            TextView row = row(favoritesView, app);
             row.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
-            row.setOnClickListener(v -> launch(app));
-            row.setOnLongClickListener(v -> { showMenu(v, app); return true; });
             favoritesView.addView(row);
         }
         hint.setVisibility(favoritesView.getChildCount() == 0 ? View.VISIBLE : View.GONE);
         bindIcon(left, apps.get(prefs.getString("left", "")));
         bindIcon(right, apps.get(prefs.getString("right", "")));
+    }
+
+    // Most launched apps (via Birdy, last 3 days) above the full list; empty when off, unused or searching.
+    private void renderTop() {
+        topRows.removeAllViews();
+        if (prefs.getBoolean("top", false) && search.length() == 0) {
+            for (String key : LaunchLog.rank(prefs.getString("launches", ""), System.currentTimeMillis(), TOP_WINDOW_MS)) {
+                App app = apps.get(key);
+                if (app == null) continue;
+                TextView row = row(topRows, app);
+                row.setFontVariationSettings("'wght' 450");
+                topRows.addView(row);
+                if (topRows.getChildCount() == TOP_COUNT) break;
+            }
+        }
+        topSection.setVisibility(topRows.getChildCount() > 0 ? View.VISIBLE : View.GONE);
+    }
+
+    private TextView row(ViewGroup parent, App app) {
+        TextView row = (TextView) getLayoutInflater().inflate(R.layout.item, parent, false);
+        row.setText(app.label);
+        row.setOnClickListener(v -> launch(app));
+        row.setOnLongClickListener(v -> { showMenu(v, app); return true; });
+        return row;
     }
 
     // White monochrome glyph where the app ships one (Android 13+), otherwise the icon in grayscale.
@@ -349,6 +399,11 @@ public class MainActivity extends Activity {
             launcherApps.startMainActivity(app.info.getComponentName(), app.info.getUser(), null, null);
         } catch (RuntimeException e) { // app removed or disabled since the list was built
             load();
+            return;
+        }
+        if (prefs.getBoolean("top", false)) { // only collect usage while the feature is on
+            prefs.edit().putString("launches", LaunchLog.append(
+                    prefs.getString("launches", ""), app.key, System.currentTimeMillis(), TOP_WINDOW_MS)).apply();
         }
     }
 
@@ -356,6 +411,7 @@ public class MainActivity extends Activity {
         final LauncherActivityInfo info;
         final String key;
         final String label;
+        long installed; // first install time, only filled when sorting by it
 
         App(LauncherActivityInfo info) {
             this.info = info;

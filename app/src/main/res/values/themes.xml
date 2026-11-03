@@ -12,6 +12,13 @@
         <item name="android:popupMenuStyle">@style/Birdy.Popup</item>
         <item name="android:textAppearanceLargePopupMenu">@style/Birdy.PopupText</item>
         <item name="android:textAppearanceSmallPopupMenu">@style/Birdy.PopupText</item>
+        <item name="android:alertDialogTheme">@style/Birdy.Dialog</item>
+    </style>
+
+    <style name="Birdy.Dialog" parent="@android:style/Theme.Material.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/dialog</item>
+        <item name="android:fontFamily">@font/outfit</item>
+        <item name="android:colorAccent">@android:color/white</item>
     </style>
 
     <!-- Small grey caps label above a section. -->
@@ -37,6 +44,13 @@
         <item name="android:lineSpacingExtra">3dp</item>
         <item name="android:textColor">@android:color/white</item>
         <item name="android:textSize">17sp</item>
+    </style>
+
+    <!-- Grey explanation under a setting. -->
+    <style name="Birdy.Hint" parent="Birdy.Line">
+        <item name="android:layout_marginTop">0dp</item>
+        <item name="android:textColor">#8C8C8C</item>
+        <item name="android:textSize">14sp</item>
     </style>
 
     <style name="Birdy.Popup" parent="@android:style/Widget.Material.PopupMenu">
