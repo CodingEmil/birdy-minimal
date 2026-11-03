@@ -40,8 +40,12 @@ android {
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
+
+    // Robolectric runs MainActivity on the JVM and needs the merged resources for that.
+    testOptions.unitTests.isIncludeAndroidResources = true
 }
 
 dependencies {
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.16.1") // tests only, nothing of it ships in the APK
 }

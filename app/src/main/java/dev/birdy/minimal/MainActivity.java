@@ -63,7 +63,7 @@ public class MainActivity extends Activity {
     private final Map<String, App> apps = new HashMap<>(); // by flattened ComponentName
     private final List<String> favorites = new ArrayList<>();
     private final List<App> all = new ArrayList<>(); // in list order; the adapter shows these or the search matches
-    private App bestMatch; // what Enter opens: the first match in list order, wherever it is shown
+    private App bestMatch; // what Enter opens: the first search match, wherever it is shown
     private ArrayAdapter<App> adapter;
     private ColorMatrixColorFilter grayscale;
     private Collator collator;
@@ -201,7 +201,7 @@ public class MainActivity extends Activity {
         if (settle != null) settle.cancel();
         drawerOpen = false;
         hideKeyboard();
-        setProgress(0);
+        setDrawerProgress(0);
     }
 
     // Vertical drags anywhere move the drawer: up from home opens, down from the top of the list closes.
@@ -234,7 +234,7 @@ public class MainActivity extends Activity {
         }
         if (!dragging) return super.dispatchTouchEvent(ev);
 
-        setProgress(Math.max(0, Math.min(1, downProgress - dy / dragDistance)));
+        setDrawerProgress(Math.max(0, Math.min(1, downProgress - dy / dragDistance)));
         if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
             dragging = false;
             velocity.computeCurrentVelocity(1000);
@@ -254,12 +254,13 @@ public class MainActivity extends Activity {
         settle = ValueAnimator.ofFloat(progress, target);
         settle.setDuration((long) (SETTLE_MS * Math.max(0.5f, Math.abs(target - progress))));
         settle.setInterpolator(SETTLE_CURVE);
-        settle.addUpdateListener(a -> setProgress((float) a.getAnimatedValue()));
+        settle.addUpdateListener(a -> setDrawerProgress((float) a.getAnimatedValue()));
         settle.start();
     }
 
     // Fade-through: home fades out and recedes first, then the list fades in while rising, so texts never overlap.
-    private void setProgress(float p) {
+    // Not named setProgress: Activity already has a setProgress(int), and setProgress(0) silently called that one.
+    private void setDrawerProgress(float p) {
         if (p > 0 && drawer.getVisibility() != View.VISIBLE) {
             renderTop(); // counts changed since the last open
             list.setSelection(0);
@@ -310,8 +311,13 @@ public class MainActivity extends Activity {
     // where the thumb is. Otherwise the list reads top-down as usual.
     private void applySearch(boolean jump) {
         String query = search.getText().toString();
-        List<App> shown = new ArrayList<>();
-        for (App app : all) if (Search.matches(app.label, query)) shown.add(app);
+        List<App> shown = new ArrayList<>(), later = new ArrayList<>();
+        for (App app : all) {
+            int rank = Search.rank(app.label, query);
+            if (rank == Search.START) shown.add(app);
+            else if (rank == Search.WORD) later.add(app);
+        }
+        shown.addAll(later);
         bestMatch = shown.isEmpty() ? null : shown.get(0);
         boolean fromBottom = !query.trim().isEmpty() && prefs.getBoolean("bottom", false);
         if (fromBottom) Collections.reverse(shown);
