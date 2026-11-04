@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Block screen: which app, why, and the only way out (home). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical"
+    android:paddingHorizontal="32dp"
+    android:paddingTop="96dp"
+    android:paddingBottom="24dp">
+
+    <TextView
+        android:id="@+id/block_title"
+        style="@style/Birdy.Eyebrow"
+        android:layout_marginTop="0dp" />
+
+    <TextView
+        android:id="@+id/block_app"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="-2dp"
+        android:fontVariationSettings="'wght' 250"
+        android:textColor="@android:color/white"
+        android:textSize="48sp" />
+
+    <TextView
+        android:id="@+id/block_detail"
+        style="@style/Birdy.Line"
+        android:layout_marginTop="16dp"
+        android:textColor="#B3B3B3" />
+
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <Button
+        android:id="@+id/block_home"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@drawable/button"
+        android:fontVariationSettings="'wght' 500"
+        android:stateListAnimator="@null"
+        android:text="Zum Startscreen"
+        android:textAllCaps="false"
+        android:textColor="@android:color/black"
+        android:textSize="17sp" />
+</LinearLayout>

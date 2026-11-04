@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Lets the long-press menu open the system uninstall dialog (install-time, no prompt). -->
     <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
@@ -7,6 +8,10 @@
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
     <!-- Swipe down on home opens the notification shade (install-time, no prompt). -->
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
+    <!-- Time limits: foreground time per app today. Granted by the user under "Nutzungsdatenzugriff". -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
 
     <!-- Android 11+ package visibility: every app with a launcher entry, plus other home apps
          so SetupActivity can tell whether Birdy is the default. -->
@@ -53,5 +58,32 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <!-- Edits the time limits of one app. -->
+        <activity
+            android:name=".LimitActivity"
+            android:exported="false" />
+
+        <!-- Covers a blocked app; own task, so leaving it never returns into the app. -->
+        <activity
+            android:name=".BlockActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:taskAffinity="dev.birdy.minimal.block" />
+
+        <!-- Strict mode for time limits: sees which app comes to the front (see res/xml/block_service.xml). -->
+        <service
+            android:name=".BlockService"
+            android:exported="true"
+            android:label="@string/block_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/block_service" />
+        </service>
     </application>
 </manifest>

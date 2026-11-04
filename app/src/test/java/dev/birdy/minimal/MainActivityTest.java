@@ -632,6 +632,43 @@ public class MainActivityTest {
         shot(a, "11-home-group-open");
     }
 
+    // --- Time limits from the launcher ---
+
+    @org.junit.After
+    public void resetClock() { Usage.clock = java.time.Clock.systemDefaultZone(); }
+
+    @Test
+    public void longPressOffersTimeLimitForThatApp() throws Exception {
+        prefs.edit().putString("favorites", key("YouTube")).commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "YouTube").performLongClick();
+        pick("Zeitlimit…");
+        android.content.Intent edit = shadowOf(a).getNextStartedActivity();
+        assertEquals(LimitActivity.class.getName(), edit.getComponent().getClassName());
+        assertEquals("com.example.youtube", edit.getStringExtra(LimitActivity.PKG));
+        assertEquals("YouTube", edit.getStringExtra(LimitActivity.LABEL));
+    }
+
+    @Test
+    public void tappingABlockedAppInBirdyShowsTheBlockScreenInstead() throws Exception {
+        java.time.ZoneId zone = java.time.ZoneId.systemDefault();
+        Usage.clock = java.time.Clock.fixed(java.time.LocalDateTime.of(2026, 11, 4, 22, 0).atZone(zone).toInstant(), zone);
+        prefs.edit().putBoolean("top", true).putString("favorites", key("YouTube") + "\n" + key("Wetter"))
+                .putString("limits", "com.example.youtube\t0\t\t1260-420").commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "YouTube").performClick();
+        idle();
+        android.content.Intent next = shadowOf(a).getNextStartedActivity();
+        assertEquals(BlockActivity.class.getName(), next.getComponent().getClassName());
+        assertEquals("Schonzeit abends", next.getStringExtra(BlockActivity.TITLE));
+        assertEquals("not launched", "", prefs.getString("launches", ""));
+        homeRow(a, "Wetter").performClick();
+        idle();
+        assertTrue("apps without limits open as usual", prefs.getString("launches", "").contains(key("Wetter")));
+    }
+
     @Test
     public void groupsSurviveARestartAndSkipUninstalledApps() throws Exception {
         seedGroup("Musik", "Spotify", "Gone App");

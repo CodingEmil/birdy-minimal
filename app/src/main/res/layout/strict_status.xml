@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The two grants time limits need, with a way to each setting. Shared by the limit screen and the Birdy app. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/strict_usage"
+        style="@style/Birdy.Line"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:minHeight="48dp"
+        android:textColor="@color/item_text" />
+
+    <TextView
+        style="@style/Birdy.Hint"
+        android:text="Damit Birdy die echte Nutzungszeit jeder App kennt. Birdy in der Liste suchen und erlauben." />
+
+    <TextView
+        android:id="@+id/strict_service"
+        style="@style/Birdy.Line"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:minHeight="48dp"
+        android:textColor="@color/item_text" />
+
+    <TextView
+        android:id="@+id/strict_service_hint"
+        style="@style/Birdy.Hint"
+        android:text="Damit Birdy jede gesperrte App sofort abfängt, auch über Benachrichtigungen oder „Zuletzt verwendet“. Unter Bedienungshilfen „Birdy Zeitlimits“ einschalten.\n\nIst der Schalter ausgegraut, weil Birdy nicht aus dem Play Store kommt: App-Info von Birdy öffnen, oben rechts ⋮ → „Eingeschränkte Einstellungen zulassen“, dann erneut versuchen." />
+
+    <TextView
+        android:id="@+id/strict_app_info"
+        style="@style/Birdy.Line"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:minHeight="48dp"
+        android:text="App-Info von Birdy öffnen  →"
+        android:textColor="@color/item_text" />
+</LinearLayout>

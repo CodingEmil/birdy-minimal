@@ -12,6 +12,7 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -73,6 +74,30 @@ public class SetupActivity extends Activity {
         boolean active = isDefaultHome();
         status.setText(active ? "Aktiv als Launcher" : "Noch nicht aktiv");
         action.setText(active ? "Launcher wechseln" : "Als Startbildschirm festlegen");
+        renderLimits();
+        LimitActivity.bindStrictStatus(this, findViewById(android.R.id.content));
+    }
+
+    // One row per app with limits: name, then what is set; tap edits.
+    private void renderLimits() {
+        LinearLayout list = findViewById(R.id.limits_list);
+        list.removeAllViews();
+        PackageManager pm = getPackageManager();
+        for (Limits.AppLimit a : Usage.load(this).all()) {
+            String label;
+            try {
+                label = pm.getApplicationLabel(pm.getApplicationInfo(a.pkg, 0)).toString();
+            } catch (PackageManager.NameNotFoundException e) {
+                continue; // not installed right now; the limit stays saved
+            }
+            TextView row = new TextView(this, null, 0, R.style.Birdy_Line);
+            row.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+            row.setText(label + "\n" + a.summary());
+            row.setTextColor(getColorStateList(R.color.item_text));
+            row.setMinHeight(Math.round(48 * getResources().getDisplayMetrics().density));
+            row.setOnClickListener(v -> LimitActivity.open(this, a.pkg, label));
+            list.addView(row);
+        }
     }
 
     private boolean isDefaultHome() {

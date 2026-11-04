@@ -576,6 +576,7 @@ public class MainActivity extends Activity {
         menu.add(0, 6, 0, "Zu Gruppe hinzufügen…");
         menu.add(0, 2, 0, isLeft ? "Unten links entfernen" : "Unten links");
         menu.add(0, 3, 0, isRight ? "Unten rechts entfernen" : "Unten rechts");
+        menu.add(0, 8, 0, "Zeitlimit…");
         menu.add(0, 4, 0, "App-Info");
         if ((app.info.getApplicationInfo().flags & ApplicationInfo.FLAG_SYSTEM) == 0) menu.add(0, 5, 0, "Deinstallieren");
         popup.setOnMenuItemClickListener(item -> {
@@ -590,6 +591,9 @@ public class MainActivity extends Activity {
                 case 7:
                     inGroup.apps.remove(app.key);
                     saveHome();
+                    break;
+                case 8:
+                    LimitActivity.open(this, app.info.getComponentName().getPackageName(), app.label);
                     break;
                 case 2:
                     prefs.edit().putString("left", isLeft ? "" : app.key).apply();
@@ -729,6 +733,13 @@ public class MainActivity extends Activity {
     }
 
     private void launch(App app) {
+        // Also checked by BlockService in strict mode; this covers launches from Birdy without it.
+        String pkg = app.info.getComponentName().getPackageName();
+        Limits.Block block = Usage.check(this, Usage.load(this).get(pkg));
+        if (block != null) {
+            BlockActivity.show(this, pkg, block);
+            return;
+        }
         try {
             launcherApps.startMainActivity(app.info.getComponentName(), app.info.getUser(), null, null);
         } catch (RuntimeException e) { // app removed or disabled since the list was built

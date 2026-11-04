@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Time limits of one app: daily limit, morning and evening quiet time, and the state of strict mode. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="32dp"
+        android:paddingTop="56dp"
+        android:paddingBottom="24dp">
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:layout_marginTop="0dp"
+            android:text="Zeitlimit" />
+
+        <TextView
+            android:id="@+id/limit_app"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="-2dp"
+            android:fontVariationSettings="'wght' 250"
+            android:textColor="@android:color/white"
+            android:textSize="48sp" />
+
+        <TextView
+            android:id="@+id/limit_used"
+            style="@style/Birdy.Hint"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="Tageslimit" />
+
+        <TextView
+            android:id="@+id/limit_daily"
+            style="@style/Birdy.Line"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:textColor="@color/item_text" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Summe pro Tag, ab Mitternacht. Ist sie aufgebraucht, sperrt Birdy die App bis morgen, auch mitten in der Nutzung." />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="Schonzeiten" />
+
+        <Switch
+            android:id="@+id/limit_morning"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Morgens gesperrt" />
+
+        <TextView
+            android:id="@+id/limit_morning_time"
+            style="@style/Birdy.Line"
+            android:layout_marginTop="0dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="40dp"
+            android:textColor="@color/item_text" />
+
+        <Switch
+            android:id="@+id/limit_evening"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Abends gesperrt" />
+
+        <TextView
+            android:id="@+id/limit_evening_time"
+            style="@style/Birdy.Line"
+            android:layout_marginTop="0dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="40dp"
+            android:textColor="@color/item_text" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="In diesen Zeiten lässt sich die App gar nicht öffnen. Abends darf über Mitternacht gehen, z. B. 21:00 bis 07:00." />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="Strenger Modus" />
+
+        <include layout="@layout/strict_status" />
+
+        <TextView
+            android:id="@+id/limit_clear"
+            style="@style/Birdy.Line"
+            android:layout_marginTop="32dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:text="Alle Limits dieser App entfernen"
+            android:textColor="@color/item_text" />
+    </LinearLayout>
+</ScrollView>

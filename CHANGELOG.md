@@ -6,6 +6,8 @@ Beim vollen Release wird die Überschrift zur Versionsnummer (`## 1.4`) und dar�
 ## Unveröffentlicht
 
 ### Neu
+- **Zeitlimits pro App:** Lange auf eine App drücken → „Zeitlimit…“. Ein Tageslimit (Summe ab Mitternacht) und Schonzeiten morgens und abends (von–bis, abends auch über Mitternacht). Gesperrte Apps zeigen eine Sperrseite statt der App.
+- **Strenger Modus:** Als Bedienungshilfe fängt Birdy gesperrte Apps immer ab, auch wenn sie über Benachrichtigungen, „Zuletzt verwendet“ oder Links geöffnet werden, und unterbricht eine App, sobald ihr Limit aufgebraucht ist oder die Schonzeit beginnt. Braucht die Freigaben „Nutzungsdatenzugriff“ und „Bedienungshilfe“; die Birdy-App und jede Limit-Seite führen dorthin.
 - **Gruppen auf dem Startscreen:** Lange auf eine App drücken → „Zu Gruppe hinzufügen…“ legt sie in eine bestehende oder neue Gruppe. Die App wird kopiert und bleibt in der Liste. Antippen klappt die Gruppe auf, lange drücken wählt Apps per Checkliste aus, benennt um oder löscht die Gruppe. Gruppen zählen zu den 7 Plätzen.
 - **Herunterwischen öffnet die Benachrichtigungen**, wie auf Pixel-Handys. Abschaltbar in der Birdy-App.
 - **Beim Hochwischen gleich tippen** (Einstellung): Die Tastatur geht mit der App-Liste auf.

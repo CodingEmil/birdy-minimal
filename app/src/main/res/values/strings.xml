@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="block_service_label">Birdy Zeitlimits</string>
+    <string name="block_service_description">Sperrt Apps, deren Tageslimit aufgebraucht ist oder deren Schonzeit läuft, egal wie sie geöffnet werden. Birdy sieht dabei nur, welche App gerade vorne ist, keine Inhalte.</string>
+</resources>
