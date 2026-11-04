@@ -59,11 +59,23 @@
             android:layout_height="0dp"
             android:layout_weight="1">
 
-            <LinearLayout
-                android:id="@+id/favorites"
+            <!-- Scrolls only when an open group does not fit; otherwise vertical swipes belong to the drawer. -->
+            <ScrollView
+                android:id="@+id/favorites_scroll"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical" />
+                android:layout_height="match_parent"
+                android:fadingEdgeLength="48dp"
+                android:overScrollMode="never"
+                android:requiresFadingEdge="vertical"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/favorites"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingBottom="8dp" />
+            </ScrollView>
 
             <TextView
                 android:id="@+id/hint"
@@ -72,7 +84,7 @@
                 android:fontVariationSettings="'wght' 350"
                 android:lineSpacingExtra="4dp"
                 android:paddingHorizontal="32dp"
-                android:text="Hochwischen für alle Apps.\nLange drücken, um eine App hier anzuheften."
+                android:text="Hochwischen für alle Apps.\nLange drücken, um eine App hier anzuheften\noder in eine Gruppe zu legen."
                 android:textColor="#8C8C8C"
                 android:textSize="15sp" />
         </FrameLayout>

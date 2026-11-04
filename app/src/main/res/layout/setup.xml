@@ -63,6 +63,10 @@
 
         <TextView
             style="@style/Birdy.Line"
+            android:text="Gruppen: lange auf eine App drücken, dann „Zu Gruppe hinzufügen“. Tippen klappt eine Gruppe auf, lange drücken bearbeitet sie." />
+
+        <TextView
+            style="@style/Birdy.Line"
             android:text="Zurückwechseln geht jederzeit hier." />
 
         <TextView

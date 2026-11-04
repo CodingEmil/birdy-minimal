@@ -2,6 +2,7 @@ package dev.birdy.minimal;
 
 import android.animation.ValueAnimator;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
@@ -11,6 +12,7 @@ import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.PorterDuff;
+import android.graphics.Rect;
 import android.graphics.drawable.AdaptiveIconDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -19,7 +21,12 @@ import android.os.Bundle;
 import android.os.Process;
 import android.os.UserHandle;
 import android.text.Editable;
+import android.text.InputType;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextWatcher;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
 import android.text.format.DateFormat;
 import android.util.TypedValue;
 import android.view.Menu;
@@ -28,17 +35,21 @@ import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.animation.PathInterpolator;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.PopupMenu;
+import android.widget.ScrollView;
 import android.widget.TextClock;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.window.OnBackInvokedDispatcher;
 
 import java.text.Collator;
@@ -49,10 +60,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class MainActivity extends Activity {
     static final String PREFS = "birdy"; // shared with SetupActivity, which edits the settings keys "top", "newest", "type", "bottom" and "shade"
-    private static final int MAX_FAVORITES = 7;
+    private static final int MAX_FAVORITES = 7; // apps and groups together
     private static final int TOP_COUNT = 5;
     private static final long TOP_WINDOW_MS = 3L * 24 * 60 * 60 * 1000; // "most used" looks back 3 days
     private static final long SETTLE_MS = 340;
@@ -61,7 +73,10 @@ public class MainActivity extends Activity {
     private LauncherApps launcherApps;
     private SharedPreferences prefs;
     private final Map<String, App> apps = new HashMap<>(); // by flattened ComponentName
-    private final List<String> favorites = new ArrayList<>();
+    private final List<String> favorites = new ArrayList<>(); // app keys and "group:<id>" entries, in home order
+    private Groups groups;
+    private String openGroup; // id of the group unfolded on the home screen, or null
+    private View openFirst, openLast; // its header and last row, to scroll them into view
     private final List<App> all = new ArrayList<>(); // in list order; the adapter shows these or the search matches
     private App bestMatch; // what Enter opens and the list highlights: the first search match; null when not searching
     private ArrayAdapter<App> adapter;
@@ -73,6 +88,7 @@ public class MainActivity extends Activity {
     private ListView list;
     private EditText search;
     private LinearLayout favoritesView;
+    private ScrollView favoritesScroll;
     private ImageView left, right;
 
     // Drawer transition: progress 0 = home, 1 = app list. Finger drags drive it, ValueAnimator settles it.
@@ -81,7 +97,7 @@ public class MainActivity extends Activity {
     private ValueAnimator settle;
     private final VelocityTracker velocity = VelocityTracker.obtain();
     private float downX, downY, downProgress;
-    private boolean dragging, listAtTop, shadePulled;
+    private boolean dragging, listAtTop, shadePulled, homeCanScrollUp, homeCanScrollDown;
     private int touchSlop;
     private float dragDistance, flingVelocity, density;
 
@@ -108,6 +124,7 @@ public class MainActivity extends Activity {
         collator = Collator.getInstance(); // locale-aware, so Ä/Ö/Ü sort next to A/O/U
         String saved = prefs.getString("favorites", "");
         if (!saved.isEmpty()) favorites.addAll(Arrays.asList(saved.split("\n")));
+        groups = Groups.parse(prefs.getString("groups", ""));
 
         density = getResources().getDisplayMetrics().density;
         touchSlop = ViewConfiguration.get(this).getScaledTouchSlop();
@@ -126,6 +143,7 @@ public class MainActivity extends Activity {
         home = findViewById(R.id.home);
         drawer = findViewById(R.id.drawer);
         favoritesView = findViewById(R.id.favorites);
+        favoritesScroll = findViewById(R.id.favorites_scroll);
         hint = findViewById(R.id.hint);
         left = findViewById(R.id.left);
         right = findViewById(R.id.right);
@@ -175,7 +193,7 @@ public class MainActivity extends Activity {
         // Android 13+ delivers Back here; older versions call onBackPressed().
         if (Build.VERSION.SDK_INT >= 33) {
             getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
-                    OnBackInvokedDispatcher.PRIORITY_DEFAULT, () -> animateTo(false));
+                    OnBackInvokedDispatcher.PRIORITY_DEFAULT, this::back);
         }
 
         load();
@@ -192,13 +210,20 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        animateTo(false);
+        back();
+    }
+
+    // Back folds an open group first, then closes the app list.
+    private void back() {
+        if (!drawerOpen && progress == 0 && openGroup != null) closeGroup();
+        else animateTo(false);
     }
 
     // Home pressed while already home.
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        closeGroup();
         animateTo(false);
     }
 
@@ -210,6 +235,7 @@ public class MainActivity extends Activity {
         drawerOpen = false;
         hideKeyboard();
         setDrawerProgress(0);
+        closeGroup();
     }
 
     // Vertical drags anywhere move the drawer: up from home opens, down from the top of the list closes.
@@ -223,6 +249,10 @@ public class MainActivity extends Activity {
             listAtTop = !list.canScrollVertically(-1);
             dragging = false;
             shadePulled = false;
+            // An unfolded group can make the home list scroll; then it keeps the swipes it can use.
+            boolean onHomeList = !drawerOpen && progress == 0 && contains(favoritesScroll, ev);
+            homeCanScrollUp = onHomeList && favoritesScroll.canScrollVertically(-1);
+            homeCanScrollDown = onHomeList && favoritesScroll.canScrollVertically(1);
             velocity.clear();
         }
         velocity.addMovement(ev);
@@ -231,7 +261,7 @@ public class MainActivity extends Activity {
         // Down on the home screen pulls the notification shade, as on Pixel phones. The rest of the gesture is ours.
         if (shadePulled) return true;
         if (!dragging && !drawerOpen && progress == 0 && action == MotionEvent.ACTION_MOVE
-                && dy > touchSlop && dy > Math.abs(ev.getX() - downX) && prefs.getBoolean("shade", true)) {
+                && dy > touchSlop && dy > Math.abs(ev.getX() - downX) && !homeCanScrollUp && prefs.getBoolean("shade", true)) {
             shadePulled = true;
             cancelChildTouch(ev);
             expandNotifications();
@@ -240,7 +270,7 @@ public class MainActivity extends Activity {
 
         if (!dragging && action == MotionEvent.ACTION_MOVE
                 && Math.abs(dy) > touchSlop && Math.abs(dy) > Math.abs(ev.getX() - downX)
-                && (drawerOpen ? dy > 0 && listAtTop : dy < 0)) {
+                && (drawerOpen ? dy > 0 && listAtTop : dy < 0 && !homeCanScrollDown)) {
             dragging = true;
             downY = ev.getY(); // track from here so the content does not jump by the slop
             dy = 0;
@@ -258,6 +288,13 @@ public class MainActivity extends Activity {
             animateTo(Math.abs(vy) > flingVelocity ? vy < 0 : progress > 0.5f);
         }
         return true;
+    }
+
+    private static boolean contains(View view, MotionEvent ev) {
+        int[] at = new int[2];
+        view.getLocationInWindow(at);
+        return ev.getX() >= at[0] && ev.getX() < at[0] + view.getWidth()
+                && ev.getY() >= at[1] && ev.getY() < at[1] + view.getHeight();
     }
 
     // Children drop this touch, so no tap, long press or scroll fires.
@@ -299,6 +336,7 @@ public class MainActivity extends Activity {
             list.setSelection(0);
         }
         progress = p;
+        if (p == 1) closeGroup(); // hidden behind the list now; fold it so home is tidy on return
         drawer.setVisibility(p > 0 ? View.VISIBLE : View.INVISIBLE);
         drawer.setAlpha(Math.max(0, (p - 0.3f) / 0.7f));
         drawer.setTranslationY((1 - p) * 72 * density);
@@ -366,16 +404,113 @@ public class MainActivity extends Activity {
     // Keys of uninstalled apps stay saved but are skipped, so a pin survives app updates and reinstalls.
     private void renderHome() {
         favoritesView.removeAllViews();
+        openFirst = openLast = null;
         for (String key : favorites) {
+            if (Groups.isKey(key)) {
+                Groups.Group group = groups.get(Groups.idOf(key));
+                if (group == null) continue;
+                TextView header = groupRow(group);
+                favoritesView.addView(header);
+                if (group.id.equals(openGroup)) {
+                    openFirst = header;
+                    addGroupApps(group);
+                    openLast = favoritesView.getChildAt(favoritesView.getChildCount() - 1);
+                }
+                continue;
+            }
             App app = apps.get(key);
             if (app == null) continue;
             TextView row = row(favoritesView, app);
             row.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
             favoritesView.addView(row);
         }
-        hint.setVisibility(favoritesView.getChildCount() == 0 ? View.VISIBLE : View.GONE);
+        hint.setVisibility(homeEntries() == 0 ? View.VISIBLE : View.GONE);
         bindIcon(left, apps.get(prefs.getString("left", "")));
         bindIcon(right, apps.get(prefs.getString("right", "")));
+    }
+
+    // Pinned apps that are installed plus groups: what counts against MAX_FAVORITES.
+    private int homeEntries() {
+        int n = 0;
+        for (String key : favorites) {
+            if (Groups.isKey(key) ? groups.get(Groups.idOf(key)) != null : apps.containsKey(key)) n++;
+        }
+        return n;
+    }
+
+    // Group name like a pinned app, with the number of its apps in small grey; tap folds it open below.
+    private TextView groupRow(Groups.Group group) {
+        List<App> members = members(group);
+        TextView row = (TextView) getLayoutInflater().inflate(R.layout.item, favoritesView, false);
+        SpannableStringBuilder text = new SpannableStringBuilder(group.name).append("  ");
+        int start = text.length();
+        text.append(String.valueOf(members.size()));
+        text.setSpan(new ForegroundColorSpan(0xFF6B6B6B), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        text.setSpan(new RelativeSizeSpan(0.6f), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        row.setText(text);
+        row.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
+        row.setContentDescription("Gruppe " + group.name + ", " + members.size() + " Apps");
+        row.setOnClickListener(v -> toggleGroup(group));
+        row.setOnLongClickListener(v -> { showGroupMenu(v, group); return true; });
+        return row;
+    }
+
+    // Indented and smaller under the group header, alphabetical.
+    private void addGroupApps(Groups.Group group) {
+        int indent = Math.round(56 * density), pad = Math.round(32 * density);
+        List<App> members = members(group);
+        for (App app : members) {
+            TextView row = row(favoritesView, app);
+            row.setPaddingRelative(indent, Math.round(8 * density), pad, Math.round(8 * density));
+            row.setOnLongClickListener(v -> { showMenu(v, app, group); return true; });
+            favoritesView.addView(row);
+        }
+        if (members.isEmpty()) {
+            TextView empty = new TextView(this);
+            empty.setText("Leer. Lange auf die Gruppe drücken, um Apps auszuwählen.");
+            empty.setTextColor(0xFF8C8C8C);
+            empty.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+            empty.setPaddingRelative(indent, Math.round(6 * density), pad, Math.round(10 * density));
+            favoritesView.addView(empty);
+        }
+    }
+
+    // Installed apps of a group, alphabetical; uninstalled ones stay saved, like pins.
+    private List<App> members(Groups.Group group) {
+        List<App> out = new ArrayList<>();
+        for (String key : group.apps) {
+            App app = apps.get(key);
+            if (app != null) out.add(app);
+        }
+        out.sort((a, b) -> collator.compare(a.label, b.label));
+        return out;
+    }
+
+    private void toggleGroup(Groups.Group group) {
+        openGroup = group.id.equals(openGroup) ? null : group.id;
+        renderHome();
+        if (openFirst == null) return;
+        favoritesScroll.post(() -> { // after layout: show the whole group, header first if it is taller than the space
+            if (openFirst == null) return;
+            Rect rect = new Rect(0, openFirst.getTop(), favoritesView.getWidth(), openLast.getBottom());
+            if (rect.height() > favoritesScroll.getHeight()) rect.bottom = rect.top + favoritesScroll.getHeight();
+            favoritesScroll.requestChildRectangleOnScreen(favoritesView, rect, false);
+        });
+    }
+
+    private void closeGroup() {
+        if (openGroup == null) return;
+        openGroup = null;
+        renderHome();
+        favoritesScroll.scrollTo(0, 0);
+    }
+
+    private void saveHome() {
+        prefs.edit()
+                .putString("favorites", String.join("\n", favorites))
+                .putString("groups", groups.serialize())
+                .apply();
+        renderHome();
     }
 
     // Most launched apps (via Birdy, last 3 days) above the full list; empty when off, unused or searching.
@@ -425,13 +560,20 @@ public class MainActivity extends Activity {
     }
 
     private void showMenu(View anchor, App app) {
+        showMenu(anchor, app, null);
+    }
+
+    // inGroup: the open group the app was long-pressed in, or null.
+    private void showMenu(View anchor, App app, Groups.Group inGroup) {
         boolean pinned = favorites.contains(app.key);
         boolean isLeft = app.key.equals(prefs.getString("left", ""));
         boolean isRight = app.key.equals(prefs.getString("right", ""));
         PopupMenu popup = new PopupMenu(this, anchor);
         Menu menu = popup.getMenu();
+        if (inGroup != null) menu.add(0, 7, 0, "Aus „" + inGroup.name + "“ entfernen");
         menu.add(0, 1, 0, pinned ? "Vom Startscreen entfernen" : "Auf den Startscreen")
-                .setEnabled(pinned || favoritesView.getChildCount() < MAX_FAVORITES);
+                .setEnabled(pinned || homeEntries() < MAX_FAVORITES);
+        menu.add(0, 6, 0, "Zu Gruppe hinzufügen…");
         menu.add(0, 2, 0, isLeft ? "Unten links entfernen" : "Unten links");
         menu.add(0, 3, 0, isRight ? "Unten rechts entfernen" : "Unten rechts");
         menu.add(0, 4, 0, "App-Info");
@@ -440,7 +582,14 @@ public class MainActivity extends Activity {
             switch (item.getItemId()) {
                 case 1:
                     if (pinned) favorites.remove(app.key); else favorites.add(app.key);
-                    prefs.edit().putString("favorites", String.join("\n", favorites)).apply();
+                    saveHome();
+                    break;
+                case 6:
+                    chooseGroup(app);
+                    break;
+                case 7:
+                    inGroup.apps.remove(app.key);
+                    saveHome();
                     break;
                 case 2:
                     prefs.edit().putString("left", isLeft ? "" : app.key).apply();
@@ -460,6 +609,123 @@ public class MainActivity extends Activity {
             return true;
         });
         popup.show();
+    }
+
+    private void showGroupMenu(View anchor, Groups.Group group) {
+        PopupMenu popup = new PopupMenu(this, anchor);
+        Menu menu = popup.getMenu();
+        menu.add(0, 1, 0, "Apps auswählen…");
+        menu.add(0, 2, 0, "Umbenennen");
+        menu.add(0, 3, 0, "Gruppe löschen");
+        popup.setOnMenuItemClickListener(item -> {
+            switch (item.getItemId()) {
+                case 1: selectApps(group); break;
+                case 2: askName("Gruppe umbenennen", group.name, "Speichern", name -> { group.name = name; saveHome(); }); break;
+                case 3: confirmDelete(group); break;
+            }
+            return true;
+        });
+        popup.show();
+    }
+
+    // Long-press menu → "Zu Gruppe hinzufügen…": the groups the app is not in yet, plus a new one.
+    private void chooseGroup(App app) {
+        List<Groups.Group> options = new ArrayList<>();
+        for (Groups.Group g : groups.all()) {
+            if (!g.apps.contains(app.key) && favorites.contains(Groups.key(g.id))) options.add(g);
+        }
+        String[] items = new String[options.size() + 1];
+        for (int i = 0; i < options.size(); i++) items[i] = options.get(i).name;
+        items[options.size()] = "Neue Gruppe…";
+        new AlertDialog.Builder(this)
+                .setTitle(app.label + " hinzufügen zu")
+                .setItems(items, (d, which) -> {
+                    if (which < options.size()) {
+                        options.get(which).apps.add(app.key);
+                        saveHome();
+                        Toast.makeText(this, "Zu „" + options.get(which).name + "“ hinzugefügt", Toast.LENGTH_SHORT).show();
+                    } else {
+                        newGroup(app);
+                    }
+                })
+                .setNegativeButton("Abbrechen", null)
+                .show();
+    }
+
+    // A new group lands on the home screen, so it needs a free slot there.
+    private void newGroup(App first) {
+        if (homeEntries() >= MAX_FAVORITES) {
+            Toast.makeText(this, "Der Startscreen ist voll. Entferne zuerst eine App oder Gruppe.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        askName("Neue Gruppe", "", "Erstellen", name -> {
+            Groups.Group group = groups.create(name);
+            if (first != null) group.apps.add(first.key);
+            favorites.add(Groups.key(group.id));
+            saveHome();
+            Toast.makeText(this, "Gruppe „" + group.name + "“ ist auf dem Startscreen", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    // Checklist of all apps; the fastest way to fill or tidy a group.
+    private void selectApps(Groups.Group group) {
+        List<App> all = new ArrayList<>(apps.values());
+        all.sort((a, b) -> collator.compare(a.label, b.label));
+        String[] labels = new String[all.size()];
+        boolean[] checked = new boolean[all.size()];
+        for (int i = 0; i < all.size(); i++) {
+            labels[i] = all.get(i).label;
+            checked[i] = group.apps.contains(all.get(i).key);
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(group.name)
+                .setMultiChoiceItems(labels, checked, (d, which, on) -> checked[which] = on)
+                .setNegativeButton("Abbrechen", null)
+                .setPositiveButton("Fertig", (d, which) -> {
+                    group.apps.removeIf(apps::containsKey); // keeps saved keys of apps that are not installed right now
+                    for (int i = 0; i < all.size(); i++) if (checked[i]) group.apps.add(all.get(i).key);
+                    openGroup = group.id;
+                    saveHome();
+                })
+                .show();
+    }
+
+    private void confirmDelete(Groups.Group group) {
+        new AlertDialog.Builder(this)
+                .setTitle("„" + group.name + "“ löschen?")
+                .setMessage("Nur die Gruppe verschwindet. Die Apps bleiben in der Liste und an ihren anderen Plätzen.")
+                .setNegativeButton("Abbrechen", null)
+                .setPositiveButton("Löschen", (d, which) -> {
+                    favorites.remove(Groups.key(group.id));
+                    groups.delete(group.id);
+                    if (group.id.equals(openGroup)) openGroup = null;
+                    saveHome();
+                })
+                .show();
+    }
+
+    private void askName(String title, String initial, String action, Consumer<String> done) {
+        EditText input = new EditText(this);
+        input.setId(R.id.group_name);
+        input.setText(initial);
+        input.setSelection(initial.length());
+        input.setHint("Name");
+        input.setSingleLine(true);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        input.setTextColor(0xFFFFFFFF);
+        input.setHintTextColor(0xFF6B6B6B);
+        FrameLayout box = new FrameLayout(this);
+        int pad = Math.round(24 * density);
+        box.setPaddingRelative(pad, Math.round(8 * density), pad, 0);
+        box.addView(input);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setView(box)
+                .setNegativeButton("Abbrechen", null)
+                .setPositiveButton(action, (d, which) -> done.accept(Groups.cleanName(input.getText().toString())))
+                .create();
+        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        dialog.show();
     }
 
     private void launch(App app) {

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Name field in the group dialogs (built in code). -->
+    <item name="group_name" type="id" />
+</resources>

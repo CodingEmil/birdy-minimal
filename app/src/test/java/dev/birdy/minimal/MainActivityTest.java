@@ -22,6 +22,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.ScrollView;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -331,6 +332,314 @@ public class MainActivityTest {
         a.dispatchTouchEvent(MotionEvent.obtain(t, t + 40, MotionEvent.ACTION_UP, 900, 1100, 0));
         idle();
         assertEquals(0, CountingStatusBar.expanded);
+    }
+
+    // --- Groups on the home screen ---
+
+    private static String key(String label) {
+        String pkg = "com.example." + label.toLowerCase().replaceAll("[^a-z0-9]", "");
+        return pkg + "/" + pkg + ".Main";
+    }
+
+    private static List<String> homeRows(MainActivity a) {
+        android.widget.LinearLayout fav = a.findViewById(R.id.favorites);
+        List<String> out = new ArrayList<>();
+        for (int i = 0; i < fav.getChildCount(); i++) out.add(((android.widget.TextView) fav.getChildAt(i)).getText().toString());
+        return out;
+    }
+
+    private static View homeRow(MainActivity a, String text) {
+        android.widget.LinearLayout fav = a.findViewById(R.id.favorites);
+        for (int i = 0; i < fav.getChildCount(); i++) {
+            if (((android.widget.TextView) fav.getChildAt(i)).getText().toString().equals(text)) return fav.getChildAt(i);
+        }
+        throw new AssertionError("no home row " + text + " in " + homeRows(a));
+    }
+
+    // Long-press an app in the open list, as the finger would, and leave its menu open.
+    private static void longPressInList(MainActivity a, String label) {
+        ListView list = a.findViewById(R.id.list);
+        int pos = -1;
+        for (int i = 0; i < list.getCount(); i++) {
+            Object item = list.getItemAtPosition(i);
+            if (item != null && item.toString().equals(label)) pos = i;
+        }
+        if (pos < 0) throw new AssertionError("not in list: " + label);
+        list.setSelection(pos);
+        idle();
+        View row = list.getChildAt(pos - list.getFirstVisiblePosition());
+        list.getOnItemLongClickListener().onItemLongClick(list, row, pos, 0);
+    }
+
+    private static List<String> menuTitles() {
+        android.view.Menu m = org.robolectric.shadows.ShadowPopupMenu.getLatestPopupMenu().getMenu();
+        List<String> out = new ArrayList<>();
+        for (int i = 0; i < m.size(); i++) out.add(m.getItem(i).getTitle().toString());
+        return out;
+    }
+
+    private static void pick(String title) {
+        android.widget.PopupMenu popup = org.robolectric.shadows.ShadowPopupMenu.getLatestPopupMenu();
+        android.view.Menu m = popup.getMenu();
+        for (int i = 0; i < m.size(); i++) {
+            if (m.getItem(i).getTitle().toString().equals(title)) {
+                shadowOf(popup).getOnMenuItemClickListener().onMenuItemClick(m.getItem(i));
+                idle();
+                return;
+            }
+        }
+        throw new AssertionError("no menu item " + title + " in " + menuTitles());
+    }
+
+    private static android.app.AlertDialog dialog() {
+        return (android.app.AlertDialog) org.robolectric.shadows.ShadowAlertDialog.getLatestAlertDialog();
+    }
+
+    private static List<String> dialogItems() {
+        android.widget.ListView l = dialog().getListView();
+        List<String> out = new ArrayList<>();
+        for (int i = 0; i < l.getAdapter().getCount(); i++) out.add(l.getAdapter().getItem(i).toString());
+        return out;
+    }
+
+    private static void enterName(String name) {
+        EditText field = dialog().findViewById(R.id.group_name);
+        field.setText(name);
+        dialog().getButton(android.content.DialogInterface.BUTTON_POSITIVE).performClick();
+        idle();
+    }
+
+    private void seedGroup(String name, String... members) {
+        StringBuilder line = new StringBuilder("1\t" + name);
+        for (String m : members) line.append('\t').append(key(m));
+        prefs.edit().putString("groups", line.toString()).putString("favorites", "group:1").commit();
+    }
+
+    private String savedGroups() { return prefs.getString("groups", ""); }
+
+    @Test
+    public void createGroupFromAPinnedAppThenAddFromTheList() throws Exception {
+        prefs.edit().putString("favorites", key("Spotify")).commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "Spotify").performLongClick();
+        assertTrue(menuTitles().contains("Zu Gruppe hinzufügen…"));
+        pick("Zu Gruppe hinzufügen…");
+        assertEquals(Arrays.asList("Neue Gruppe…"), dialogItems());
+        shadowOf(dialog()).clickOnItem(0);
+        idle();
+        enterName("Musik");
+        assertEquals("the app is copied, so it stays pinned too", Arrays.asList("Spotify", "Musik  1"), homeRows(a));
+        assertEquals("1\tMusik\t" + key("Spotify"), savedGroups());
+
+        // second app, from the full list
+        swipeUp(a);
+        longPressInList(a, "Podcasts");
+        pick("Zu Gruppe hinzufügen…");
+        assertEquals(Arrays.asList("Musik", "Neue Gruppe…"), dialogItems());
+        shadowOf(dialog()).clickOnItem(0);
+        idle();
+        assertEquals("Zu „Musik“ hinzugefügt", org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+        a.onBackPressed();
+        idle();
+        assertEquals(Arrays.asList("Spotify", "Musik  2"), homeRows(a));
+        assertTrue("still in the list", shown(a).contains("Podcasts"));
+    }
+
+    @Test
+    public void groupListsOnlyGroupsTheAppIsNotInYet() throws Exception {
+        prefs.edit().putString("groups", "1\tMusik\t" + key("Spotify") + "\n2\tSocial")
+                .putString("favorites", "group:1\ngroup:2\n" + key("Spotify")).commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "Spotify").performLongClick();
+        pick("Zu Gruppe hinzufügen…");
+        assertEquals(Arrays.asList("Social", "Neue Gruppe…"), dialogItems());
+    }
+
+    @Test
+    public void tapFoldsTheGroupOpenAndClosed() throws Exception {
+        prefs.edit().putBoolean("top", true).commit();
+        seedGroup("Musik", "Spotify", "Podcasts");
+        installApps(LABELS);
+        MainActivity a = start().get();
+        assertEquals(Arrays.asList("Musik  2"), homeRows(a));
+        homeRow(a, "Musik  2").performClick();
+        assertEquals("members alphabetical, under the header", Arrays.asList("Musik  2", "Podcasts", "Spotify"), homeRows(a));
+        shot(a, "9-group-open");
+        homeRow(a, "Musik  2").performClick();
+        assertEquals(Arrays.asList("Musik  2"), homeRows(a));
+        homeRow(a, "Musik  2").performClick();
+        homeRow(a, "Spotify").performClick();
+        idle();
+        assertTrue("tapping a member opens it", prefs.getString("launches", "").contains(key("Spotify")));
+    }
+
+    @Test
+    public void backFoldsTheGroupAndHomeButtonToo() throws Exception {
+        seedGroup("Musik", "Spotify");
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "Musik  1").performClick();
+        a.onBackPressed();
+        idle();
+        assertEquals(Arrays.asList("Musik  1"), homeRows(a));
+        homeRow(a, "Musik  1").performClick();
+        a.onNewIntent(new android.content.Intent());
+        idle();
+        assertEquals(Arrays.asList("Musik  1"), homeRows(a));
+    }
+
+    @Test
+    public void leavingHomeFoldsTheGroup() throws Exception {
+        seedGroup("Musik", "Spotify");
+        installApps(LABELS);
+        ActivityController<MainActivity> c = start();
+        MainActivity a = c.get();
+        homeRow(a, "Musik  1").performClick();
+        c.pause().stop();
+        c.restart().start().resume();
+        idle();
+        assertEquals(Arrays.asList("Musik  1"), homeRows(a));
+        homeRow(a, "Musik  1").performClick();
+        swipeUp(a);
+        a.onBackPressed();
+        idle();
+        assertEquals("folded while the list was open", Arrays.asList("Musik  1"), homeRows(a));
+    }
+
+    @Test
+    public void removeAnAppFromTheGroupKeepsTheApp() throws Exception {
+        seedGroup("Musik", "Spotify", "Podcasts");
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "Musik  2").performClick();
+        homeRow(a, "Spotify").performLongClick();
+        assertEquals("Aus „Musik“ entfernen", menuTitles().get(0));
+        pick("Aus „Musik“ entfernen");
+        assertEquals(Arrays.asList("Musik  1", "Podcasts"), homeRows(a));
+        assertEquals("1\tMusik\t" + key("Podcasts"), savedGroups());
+        swipeUp(a);
+        assertTrue(shown(a).contains("Spotify"));
+    }
+
+    @Test
+    public void checklistAddsAndRemovesManyAppsAtOnce() throws Exception {
+        seedGroup("Reisen", "Bahn");
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "Reisen  1").performLongClick();
+        assertEquals(Arrays.asList("Apps auswählen…", "Umbenennen", "Gruppe löschen"), menuTitles());
+        pick("Apps auswählen…");
+        List<String> items = dialogItems();
+        assertEquals("all apps, alphabetical", "Bahn", items.get(0));
+        android.widget.ListView l = dialog().getListView();
+        assertTrue("current members are ticked", l.isItemChecked(items.indexOf("Bahn")));
+        shadowOf(dialog()).clickOnItem(items.indexOf("Bahn"));       // untick
+        shadowOf(dialog()).clickOnItem(items.indexOf("Google Maps")); // tick
+        shadowOf(dialog()).clickOnItem(items.indexOf("Wetter"));
+        dialog().getButton(android.content.DialogInterface.BUTTON_POSITIVE).performClick();
+        idle();
+        assertEquals("opens to show the result", Arrays.asList("Reisen  2", "Google Maps", "Wetter"), homeRows(a));
+    }
+
+    @Test
+    public void renameAndDelete() throws Exception {
+        seedGroup("Musik", "Spotify");
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "Musik  1").performLongClick();
+        pick("Umbenennen");
+        assertEquals("Musik", ((EditText) dialog().findViewById(R.id.group_name)).getText().toString());
+        enterName("  Hören\t ");
+        assertEquals(Arrays.asList("Hören  1"), homeRows(a));
+        homeRow(a, "Hören  1").performLongClick();
+        pick("Gruppe löschen");
+        dialog().getButton(android.content.DialogInterface.BUTTON_POSITIVE).performClick();
+        idle();
+        assertTrue(homeRows(a).isEmpty());
+        assertEquals(View.VISIBLE, a.findViewById(R.id.hint).getVisibility());
+        assertEquals("", savedGroups());
+        assertEquals("", prefs.getString("favorites", ""));
+    }
+
+    @Test
+    public void emptyGroupExplainsWhatToDo() throws Exception {
+        seedGroup("Neu");
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "Neu  0").performClick();
+        assertEquals(2, homeRows(a).size());
+        assertTrue(homeRows(a).get(1).startsWith("Leer."));
+    }
+
+    @Test
+    public void groupsCountTowardsTheSevenHomeSlots() throws Exception {
+        StringBuilder fav = new StringBuilder("group:1");
+        for (String l : Arrays.asList("Bahn", "Banking", "Chrome", "Dateien", "Duolingo", "Fotos")) fav.append('\n').append(key(l));
+        prefs.edit().putString("groups", "1\tMusik").putString("favorites", fav.toString()).commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "Fotos").performLongClick();
+        pick("Zu Gruppe hinzufügen…");
+        shadowOf(dialog()).clickOnItem(dialogItems().indexOf("Neue Gruppe…"));
+        idle();
+        assertEquals("Der Startscreen ist voll. Entferne zuerst eine App oder Gruppe.",
+                org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+        assertEquals("1\tMusik", savedGroups());
+        swipeUp(a);
+        longPressInList(a, "Spotify");
+        android.view.Menu m = org.robolectric.shadows.ShadowPopupMenu.getLatestPopupMenu().getMenu();
+        assertFalse("no free slot for another pin", m.findItem(1).isEnabled());
+    }
+
+    @Test
+    public void bigOpenGroupScrollsAndKeepsSwipesWorking() throws Exception {
+        String[] many = new String[30];
+        for (int i = 0; i < many.length; i++) many[i] = String.format("App %02d", i);
+        seedGroup("Alles", many);
+        installApps(many);
+        MainActivity a = start().get();
+        ScrollView scroll = a.findViewById(R.id.favorites_scroll);
+        homeRow(a, "Alles  30").performClick();
+        idle();
+        assertTrue("too long for the space, so it scrolls", scroll.canScrollVertically(1));
+        int[] at = new int[2];
+        scroll.getLocationInWindow(at);
+        float y = at[1] + scroll.getHeight() * 0.8f;
+        swipe(a, y, y - 400);
+        assertEquals("a swipe up inside the group scrolls it instead of opening the list",
+                View.INVISIBLE, a.findViewById(R.id.drawer).getVisibility());
+        assertEquals("no notifications either", 0, CountingStatusBar.expanded);
+        scroll.scrollTo(0, 100000);
+        idle();
+        swipe(a, y, y - 900);
+        assertEquals("at the end of the group, swiping up opens the list again",
+                View.VISIBLE, a.findViewById(R.id.drawer).getVisibility());
+    }
+
+    @Test
+    public void groupSitsBetweenPinnedAppsAndUnfoldsInPlace() throws Exception {
+        prefs.edit().putString("groups", "1\tMusik\t" + key("Spotify") + "\t" + key("Podcasts") + "\t" + key("YouTube"))
+                .putString("favorites", key("Kamera") + "\ngroup:1\n" + key("WhatsApp") + "\n" + key("Google Maps")).commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        assertEquals(Arrays.asList("Kamera", "Musik  3", "WhatsApp", "Google Maps"), homeRows(a));
+        shot(a, "10-home-group-closed");
+        homeRow(a, "Musik  3").performClick();
+        idle();
+        assertEquals(Arrays.asList("Kamera", "Musik  3", "Podcasts", "Spotify", "YouTube", "WhatsApp", "Google Maps"), homeRows(a));
+        shot(a, "11-home-group-open");
+    }
+
+    @Test
+    public void groupsSurviveARestartAndSkipUninstalledApps() throws Exception {
+        seedGroup("Musik", "Spotify", "Gone App");
+        installApps(LABELS);
+        start();
+        MainActivity again = start().get(); // a fresh activity reads the saved state
+        assertEquals(Arrays.asList("Musik  1"), homeRows(again));
+        assertTrue("the uninstalled app stays saved for a reinstall", savedGroups().contains(key("Gone App")));
     }
 
     // --- Search results position ---
