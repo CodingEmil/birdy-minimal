@@ -3,10 +3,8 @@ package dev.birdy.minimal;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.TimePickerDialog;
-import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.view.Gravity;
@@ -24,6 +22,8 @@ public class LimitActivity extends Activity {
     private String pkg;
     private TextView daily, morningTime, eveningTime, used;
     private Switch morning, evening;
+    private String warnedFor = ""; // which grants were missing when this screen last warned
+    private boolean guiding; // sent to a settings page from the warning; check again on return
 
     static void open(Context context, String pkg, String label) {
         context.startActivity(new Intent(context, LimitActivity.class).putExtra(PKG, pkg).putExtra(LABEL, label));
@@ -57,6 +57,22 @@ public class LimitActivity extends Activity {
         super.onResume();
         render();
         bindStrictStatus(this, findViewById(android.R.id.content));
+        if (guiding) { // lead on to the next missing grant, or confirm
+            guiding = false;
+            Limits.AppLimit a = current();
+            if (!a.isEmpty() && !warn(a) && Grants.allSet(this, a.dailyMinutes > 0)) {
+                android.widget.Toast.makeText(this, "Alles bereit: Zeitlimits sind wirksam ✓", android.widget.Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    // Warns when this app's limits need a grant that is missing; once per missing combination on this screen.
+    private boolean warn(Limits.AppLimit a) {
+        boolean needsUsage = a.dailyMinutes > 0;
+        String missing = (Grants.usageMissing(this, needsUsage) ? "u" : "") + (Grants.strictMissing(this) ? "s" : "");
+        if (missing.isEmpty() || missing.equals(warnedFor)) return false;
+        warnedFor = missing;
+        return Grants.warn(this, needsUsage, () -> guiding = true);
     }
 
     private Limits.AppLimit current() {
@@ -68,9 +84,11 @@ public class LimitActivity extends Activity {
 
     private void edit(Change change) {
         Limits limits = Usage.load(this);
-        change.apply(limits.getOrCreate(pkg));
+        Limits.AppLimit a = limits.getOrCreate(pkg);
+        change.apply(a);
         Usage.save(this, limits);
         render();
+        if (!a.isEmpty()) warn(a);
     }
 
     private void render() {
@@ -156,19 +174,10 @@ public class LimitActivity extends Activity {
         TextView usageRow = root.findViewById(R.id.strict_usage), serviceRow = root.findViewById(R.id.strict_service);
         usageRow.setText(usage ? "Nutzungsdatenzugriff: erlaubt ✓" : "Nutzungsdatenzugriff erlauben  →");
         serviceRow.setText(service ? "Strenger Modus: an ✓" : "Strenger Modus einschalten  →");
-        usageRow.setOnClickListener(v -> open(activity, new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)));
-        serviceRow.setOnClickListener(v -> open(activity, new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
+        usageRow.setOnClickListener(v -> Grants.open(activity, new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)));
+        serviceRow.setOnClickListener(v -> Grants.open(activity, new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
         root.findViewById(R.id.strict_service_hint).setVisibility(service ? View.GONE : View.VISIBLE);
         root.findViewById(R.id.strict_app_info).setVisibility(service ? View.GONE : View.VISIBLE);
-        root.findViewById(R.id.strict_app_info).setOnClickListener(v -> open(activity,
-                new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", activity.getPackageName(), null))));
-    }
-
-    private static void open(Activity activity, Intent intent) {
-        try {
-            activity.startActivity(intent);
-        } catch (ActivityNotFoundException e) {
-            activity.startActivity(new Intent(Settings.ACTION_SETTINGS));
-        }
+        root.findViewById(R.id.strict_app_info).setOnClickListener(v -> Grants.open(activity, Grants.appInfo(activity)));
     }
 }

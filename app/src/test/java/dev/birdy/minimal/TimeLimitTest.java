@@ -326,4 +326,128 @@ public class TimeLimitTest {
         assertTrue(Usage.hasUsageAccess(app));
         assertFalse(Usage.strictModeOn(app));
     }
+
+    // --- Warnings when a grant is missing ---
+
+    private void enableStrictMode() {
+        Settings.Secure.putString(app.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                app.getPackageName() + "/" + BlockService.class.getName());
+    }
+
+    private static android.app.AlertDialog latestDialog() {
+        return (android.app.AlertDialog) ShadowAlertDialog.getLatestAlertDialog();
+    }
+
+    private static String message(android.app.AlertDialog d) {
+        return shadowOf(d).getMessage().toString();
+    }
+
+    private static void press(android.app.AlertDialog d, int which) {
+        d.getButton(which).performClick();
+        shadowOf(Looper.getMainLooper()).idle();
+    }
+
+    private org.robolectric.android.controller.ActivityController<LimitActivity> limitScreen() {
+        Intent intent = new Intent(app, LimitActivity.class).putExtra(LimitActivity.PKG, INSTA).putExtra(LimitActivity.LABEL, "Insta");
+        return Robolectric.buildActivity(LimitActivity.class, intent).setup();
+    }
+
+    private void setDailyLimit(LimitActivity a) {
+        a.findViewById(R.id.limit_daily).performClick();
+        press(latestDialog(), DialogInterface.BUTTON_POSITIVE); // 1 h
+    }
+
+    @Test
+    public void dailyLimitWithoutGrantsWarnsAndLeadsToUsageAccess() {
+        LimitActivity a = limitScreen().get();
+        setDailyLimit(a);
+        android.app.AlertDialog warning = latestDialog();
+        assertEquals("Achtung: Zeitlimit noch nicht wirksam", shadowOf(warning).getTitle().toString());
+        assertTrue(message(warning).contains("Nutzungsdatenzugriff: Ohne ihn kennt Birdy die Nutzungszeit nicht"));
+        assertTrue(message(warning).contains("Strenger Modus: Ohne ihn sperrt Birdy nur"));
+        press(warning, DialogInterface.BUTTON_POSITIVE);
+        assertEquals(Settings.ACTION_USAGE_ACCESS_SETTINGS, shadowOf(a).getNextStartedActivity().getAction());
+    }
+
+    @Test
+    public void sameMissingGrantsWarnOnlyOncePerScreen() {
+        LimitActivity a = limitScreen().get();
+        setDailyLimit(a);
+        android.app.AlertDialog first = latestDialog();
+        press(first, DialogInterface.BUTTON_NEGATIVE); // "Später"
+        ((Switch) a.findViewById(R.id.limit_morning)).setChecked(true);
+        assertTrue("no second popup for the same thing", latestDialog() == first);
+    }
+
+    @Test
+    public void quietTimeAloneOnlyNeedsStrictMode() {
+        LimitActivity a = limitScreen().get();
+        ((Switch) a.findViewById(R.id.limit_evening)).setChecked(true);
+        android.app.AlertDialog warning = latestDialog();
+        assertFalse("no daily limit, so usage access does not matter", message(warning).contains("Nutzungsdatenzugriff"));
+        assertTrue(message(warning).contains("Strenger Modus"));
+        assertTrue(message(warning).contains("Eingeschränkte Einstellungen zulassen"));
+        press(warning, DialogInterface.BUTTON_NEUTRAL);
+        assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, shadowOf(a).getNextStartedActivity().getAction());
+    }
+
+    @Test
+    public void setupGuidesFromOneGrantToTheNextAndConfirms() {
+        org.robolectric.android.controller.ActivityController<LimitActivity> c = limitScreen();
+        LimitActivity a = c.get();
+        setDailyLimit(a);
+        press(latestDialog(), DialogInterface.BUTTON_POSITIVE); // to usage access
+        grantUsageAccess();
+        c.pause().resume(); // back from the settings page
+        android.app.AlertDialog next = latestDialog();
+        assertFalse(message(next).contains("Nutzungsdatenzugriff"));
+        assertTrue(message(next).contains("Strenger Modus"));
+        press(next, DialogInterface.BUTTON_POSITIVE);
+        assertEquals(Settings.ACTION_ACCESSIBILITY_SETTINGS, shadowOf(a).getNextStartedActivity().getAction());
+        enableStrictMode();
+        c.pause().resume();
+        assertEquals("Alles bereit: Zeitlimits sind wirksam ✓", org.robolectric.shadows.ShadowToast.getTextOfLatestToast());
+        assertEquals("Nutzungsdatenzugriff: erlaubt ✓", ((TextView) a.findViewById(R.id.strict_usage)).getText().toString());
+    }
+
+    @Test
+    public void noWarningWhenEverythingIsSet() {
+        grantUsageAccess();
+        enableStrictMode();
+        LimitActivity a = limitScreen().get();
+        a.findViewById(R.id.limit_daily).performClick();
+        android.app.AlertDialog picker = latestDialog();
+        press(picker, DialogInterface.BUTTON_POSITIVE);
+        assertTrue(latestDialog() == picker);
+        assertEquals(INSTA + "\t60\t\t", prefs.getString("limits", ""));
+    }
+
+    @Test
+    public void homeWarnsOnceWhenLimitsCannotWork() {
+        limits(INSTA + "\t30\t\t");
+        Robolectric.buildActivity(MainActivity.class).setup();
+        android.app.AlertDialog warning = latestDialog();
+        assertEquals("Achtung: Zeitlimit noch nicht wirksam", shadowOf(warning).getTitle().toString());
+
+        ShadowAlertDialog.reset();
+        Robolectric.buildActivity(MainActivity.class).setup(); // back home again: already said
+        assertNull(ShadowAlertDialog.getLatestAlertDialog());
+
+        grantUsageAccess();
+        enableStrictMode();
+        Robolectric.buildActivity(MainActivity.class).setup();
+        assertNull(ShadowAlertDialog.getLatestAlertDialog());
+        assertFalse("all fine: the next problem gets a new warning", prefs.contains(Grants.WARNED));
+
+        Settings.Secure.putString(app.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES, "");
+        Robolectric.buildActivity(MainActivity.class).setup(); // e.g. switched off after an update
+        assertNotNull(ShadowAlertDialog.getLatestAlertDialog());
+        assertTrue(message(latestDialog()).contains("Strenger Modus"));
+    }
+
+    @Test
+    public void homeStaysQuietWithoutLimits() {
+        Robolectric.buildActivity(MainActivity.class).setup();
+        assertNull(ShadowAlertDialog.getLatestAlertDialog());
+    }
 }

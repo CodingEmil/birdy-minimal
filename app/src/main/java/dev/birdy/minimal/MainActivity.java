@@ -219,6 +219,13 @@ public class MainActivity extends Activity {
         else animateTo(false);
     }
 
+    // Limits without the grants they need do nothing; say so once (see Grants.warnOnceFromHome).
+    @Override
+    protected void onResume() {
+        super.onResume();
+        Grants.warnOnceFromHome(this);
+    }
+
     // Home pressed while already home.
     @Override
     protected void onNewIntent(Intent intent) {
