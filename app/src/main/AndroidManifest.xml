@@ -35,7 +35,7 @@
         <activity
             android:name=".SetupActivity"
             android:exported="true"
-            android:taskAffinity="dev.birdy.minimal.setup">
+            android:taskAffinity="birdy.minimal.setup">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -75,7 +75,7 @@
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTask"
-            android:taskAffinity="dev.birdy.minimal.block" />
+            android:taskAffinity="birdy.minimal.block" />
 
         <!-- Asks how long a visit should be; same task as the block screen. -->
         <activity
@@ -83,7 +83,7 @@
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTask"
-            android:taskAffinity="dev.birdy.minimal.block" />
+            android:taskAffinity="birdy.minimal.block" />
 
         <!-- Strict mode for time limits: sees which app comes to the front (see res/xml/block_service.xml). -->
         <service

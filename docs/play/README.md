@@ -20,7 +20,7 @@ Play Console → **App erstellen**
 | App oder Spiel | App |
 | Kostenlos oder kostenpflichtig | Kostenlos |
 
-Paketname ist `dev.birdy.minimal`. Er wird beim ersten Hochladen festgelegt und lässt sich danach nicht mehr ändern.
+Paketname ist `birdy.minimal` (so ist der Eintrag in der Play Console angelegt). Er lässt sich nachträglich nicht mehr ändern.
 
 ## 2. App-Signatur (wichtig, einmalig)
 

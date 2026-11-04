@@ -2,7 +2,7 @@
 
 Stand: 4. November 2026
 
-Birdy ist ein minimaler Android-Launcher (App „Birdy“, Paket `dev.birdy.minimal`). Diese Erklärung beschreibt, welche Daten Birdy verarbeitet.
+Birdy ist ein minimaler Android-Launcher (App „Birdy“, Paket `birdy.minimal`). Diese Erklärung beschreibt, welche Daten Birdy verarbeitet.
 
 **Kurz:** Birdy sammelt keine Daten, sendet nichts und hat keinen Internetzugriff. Alles, was Birdy speichert, bleibt auf deinem Gerät.
 
@@ -41,7 +41,7 @@ Fragen und Hinweise auch gern als Issue unter https://github.com/CodingEmil/bird
 
 # Privacy policy for Birdy (English)
 
-Birdy is a minimal Android launcher (package `dev.birdy.minimal`). **Birdy collects no data, sends nothing and has no internet access.** Settings, groups and time limits are stored only in the app's private storage on your device (Android's own device backup may include them, as for any app, if you turned it on) and are deleted from the device when you uninstall Birdy.
+Birdy is a minimal Android launcher (package `birdy.minimal`). **Birdy collects no data, sends nothing and has no internet access.** Settings, groups and time limits are stored only in the app's private storage on your device (Android's own device backup may include them, as for any app, if you turned it on) and are deleted from the device when you uninstall Birdy.
 
 - **Usage access** (only if you grant it) is used on the device to compute today's foreground time of apps that have a daily limit. Nothing is stored or shared.
 - **Accessibility service "Birdy Zeitlimits"** (only if you turn on strict mode) is used solely to learn which app comes to the foreground (its package name), so blocked apps can be covered even when opened from notifications or Recents. Birdy does not read screen content, input or text, does not perform actions in other apps and transmits nothing. Birdy shows a disclosure and asks for consent before you enable it.

@@ -10,7 +10,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "dev.birdy.minimal"
+        applicationId = "birdy.minimal" // fixed by the Play Console listing; the code namespace above stays
         minSdk = 26
         targetSdk = 36
         versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toInt() ?: 1 // grows with every CI build, so updates install

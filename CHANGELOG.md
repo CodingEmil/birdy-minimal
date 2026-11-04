@@ -20,6 +20,9 @@ Beim vollen Release wird die Überschrift zur Versionsnummer (`## 1.4`) und dar�
 ### Verbessert
 - Suche: Apps, deren Name mit dem Suchbegriff beginnt, kommen vor Apps, bei denen nur ein späteres Wort passt („s“ → Signal, Slack, Spotify, dann Play Store).
 
+### Wichtig
+- Die App-ID ist jetzt `birdy.minimal` (passend zum Eintrag im Play Store). Android sieht diese Version als neue App: Eine bisher per APK installierte Birdy-Version wird nicht ersetzt. Neue Version installieren, als Startbildschirm festlegen und die alte deinstallieren.
+
 ### Behoben
 - Nach dem Zurückkehren aus einer App (z. B. mit der Zurück-Geste) war die App-Liste noch offen, statt auf dem Startscreen zu landen.
 
