@@ -670,6 +670,19 @@ public class MainActivityTest {
     }
 
     @Test
+    public void tappingAnAppThatAsksFirstShowsTheQuestion() throws Exception {
+        prefs.edit().putBoolean("top", true).putString("favorites", key("YouTube"))
+                .putString("limits", "com.example.youtube\t0\t\t\t1\t0").commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "YouTube").performClick();
+        idle();
+        android.content.Intent next = shadowOf(a).getNextStartedActivity();
+        assertEquals(SessionActivity.class.getName(), next.getComponent().getClassName());
+        assertEquals("", prefs.getString("launches", ""));
+    }
+
+    @Test
     public void groupsSurviveARestartAndSkipUninstalledApps() throws Exception {
         seedGroup("Musik", "Spotify", "Gone App");
         installApps(LABELS);

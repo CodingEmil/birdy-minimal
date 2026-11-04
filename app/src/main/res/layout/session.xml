@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Before an app with sessions opens: how long this visit should be. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical"
+    android:paddingHorizontal="32dp"
+    android:paddingTop="96dp"
+    android:paddingBottom="24dp">
+
+    <TextView
+        android:id="@+id/session_title"
+        style="@style/Birdy.Eyebrow"
+        android:layout_marginTop="0dp" />
+
+    <TextView
+        android:id="@+id/session_app"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="-2dp"
+        android:fontVariationSettings="'wght' 250"
+        android:textColor="@android:color/white"
+        android:textSize="48sp" />
+
+    <TextView
+        android:id="@+id/session_question"
+        style="@style/Birdy.Line"
+        android:layout_marginTop="16dp"
+        android:textColor="#B3B3B3" />
+
+    <LinearLayout
+        android:id="@+id/session_choices"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:orientation="vertical" />
+
+    <TextView
+        android:id="@+id/session_note"
+        style="@style/Birdy.Hint"
+        android:layout_marginTop="16dp" />
+
+    <Space
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <Button
+        android:id="@+id/session_cancel"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:background="@drawable/pill"
+        android:fontVariationSettings="'wght' 500"
+        android:stateListAnimator="@null"
+        android:text="Doch nicht"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white"
+        android:textSize="17sp" />
+</LinearLayout>

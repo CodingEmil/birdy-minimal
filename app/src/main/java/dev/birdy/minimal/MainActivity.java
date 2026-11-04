@@ -744,7 +744,7 @@ public class MainActivity extends Activity {
         String pkg = app.info.getComponentName().getPackageName();
         Limits.Block block = Usage.check(this, Usage.load(this).get(pkg));
         if (block != null) {
-            BlockActivity.show(this, pkg, block);
+            if (block.ask) SessionActivity.show(this, pkg, block); else BlockActivity.show(this, pkg, block);
             return;
         }
         try {

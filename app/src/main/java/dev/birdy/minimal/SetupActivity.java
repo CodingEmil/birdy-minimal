@@ -12,7 +12,6 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -37,6 +36,7 @@ public class SetupActivity extends Activity {
         bindSwitch(R.id.type, "type", prefs);
         bindSwitch(R.id.bottom, "bottom", prefs);
         bindSwitch(R.id.shade, "shade", prefs, true);
+        findViewById(R.id.setup_limits).setOnClickListener(v -> startActivity(new Intent(this, LimitsActivity.class)));
         findViewById(R.id.black_wallpaper).setOnClickListener(v -> new AlertDialog.Builder(this)
                 .setTitle("Hintergrund schwarz machen?")
                 .setMessage("Dein aktuelles Hintergrundbild wird durch Schwarz ersetzt. Der Sperrbildschirm bleibt, wie er ist.")
@@ -74,30 +74,23 @@ public class SetupActivity extends Activity {
         boolean active = isDefaultHome();
         status.setText(active ? "Aktiv als Launcher" : "Noch nicht aktiv");
         action.setText(active ? "Launcher wechseln" : "Als Startbildschirm festlegen");
-        renderLimits();
-        LimitActivity.bindStrictStatus(this, findViewById(android.R.id.content));
+        renderLimitsSummary();
     }
 
-    // One row per app with limits: name, then what is set; tap edits.
-    private void renderLimits() {
-        LinearLayout list = findViewById(R.id.limits_list);
-        list.removeAllViews();
-        PackageManager pm = getPackageManager();
-        for (Limits.AppLimit a : Usage.load(this).all()) {
-            String label;
+    // One line under "Zeitlimits": how many apps, and whether strict mode is on.
+    private void renderLimitsSummary() {
+        int apps = 0; // installed ones; limits of uninstalled apps stay saved but do not count
+        for (Limits.AppLimit limit : Usage.load(this).all()) {
             try {
-                label = pm.getApplicationLabel(pm.getApplicationInfo(a.pkg, 0)).toString();
-            } catch (PackageManager.NameNotFoundException e) {
-                continue; // not installed right now; the limit stays saved
+                getPackageManager().getApplicationInfo(limit.pkg, 0);
+                apps++;
+            } catch (PackageManager.NameNotFoundException ignored) {
             }
-            TextView row = new TextView(this, null, 0, R.style.Birdy_Line);
-            row.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-            row.setText(label + "\n" + a.summary());
-            row.setTextColor(getColorStateList(R.color.item_text));
-            row.setMinHeight(Math.round(48 * getResources().getDisplayMetrics().density));
-            row.setOnClickListener(v -> LimitActivity.open(this, a.pkg, label));
-            list.addView(row);
         }
+        String text = apps == 0
+                ? "Tageslimit, Schonzeiten und „wie lange?“ pro App."
+                : (apps == 1 ? "1 App" : apps + " Apps") + " mit Limit · strenger Modus " + (Usage.strictModeOn(this) ? "an" : "aus");
+        ((TextView) findViewById(R.id.setup_limits_summary)).setText(text);
     }
 
     private boolean isDefaultHome() {

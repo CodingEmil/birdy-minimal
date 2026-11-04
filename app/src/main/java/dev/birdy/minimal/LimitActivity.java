@@ -17,11 +17,12 @@ import android.widget.TextView;
 // Time limits of one app (by package): a daily limit and a morning and evening quiet time. Saved on every change.
 public class LimitActivity extends Activity {
     static final String PKG = "pkg", LABEL = "label";
+    static final int[] PAUSES = {0, 5, 10, 15, 30, 60, 120};
     static final int MORNING_START = 5 * 60, MORNING_END = 9 * 60, EVENING_START = 21 * 60, EVENING_END = 0;
 
     private String pkg;
-    private TextView daily, morningTime, eveningTime, used;
-    private Switch morning, evening;
+    private TextView daily, morningTime, eveningTime, used, pause;
+    private Switch morning, evening, ask;
     private String warnedFor = ""; // which grants were missing when this screen last warned
     private boolean guiding; // sent to a settings page from the warning; check again on return
 
@@ -41,12 +42,15 @@ public class LimitActivity extends Activity {
         evening = findViewById(R.id.limit_evening);
         morningTime = findViewById(R.id.limit_morning_time);
         eveningTime = findViewById(R.id.limit_evening_time);
+        ask = findViewById(R.id.limit_ask);
+        pause = findViewById(R.id.limit_pause);
+        pause.setOnClickListener(v -> pickPause());
 
         daily.setOnClickListener(v -> pickDaily());
         morningTime.setOnClickListener(v -> pickWindow("morgens"));
         eveningTime.setOnClickListener(v -> pickWindow("abends"));
         findViewById(R.id.limit_clear).setOnClickListener(v -> {
-            edit(a -> { a.dailyMinutes = 0; a.morning = null; a.evening = null; });
+            edit(a -> { a.dailyMinutes = 0; a.morning = null; a.evening = null; a.ask = false; a.pauseMinutes = 0; });
             finish();
         });
         bindStrictStatus(this, findViewById(android.R.id.content));
@@ -85,7 +89,9 @@ public class LimitActivity extends Activity {
     private void edit(Change change) {
         Limits limits = Usage.load(this);
         Limits.AppLimit a = limits.getOrCreate(pkg);
+        boolean first = a.isEmpty();
         change.apply(a);
+        if (first && !a.isEmpty() && !a.ask) a.ask = true; // a new limit asks before each visit by default
         Usage.save(this, limits);
         render();
         if (!a.isEmpty()) warn(a);
@@ -96,8 +102,13 @@ public class LimitActivity extends Activity {
         daily.setText("Tageslimit: " + (a.dailyMinutes > 0 ? Limits.duration(a.dailyMinutes) : "aus") + "  →");
         morning.setOnCheckedChangeListener(null); // setChecked would call the listener and save again
         evening.setOnCheckedChangeListener(null);
+        ask.setOnCheckedChangeListener(null);
         morning.setChecked(a.morning != null);
         evening.setChecked(a.evening != null);
+        ask.setChecked(a.ask);
+        ask.setOnCheckedChangeListener((v, on) -> edit(x -> x.ask = on));
+        pause.setVisibility(a.ask ? View.VISIBLE : View.GONE);
+        pause.setText("Pause danach: " + (a.pauseMinutes > 0 ? Limits.duration(a.pauseMinutes) : "keine") + "  →");
         morning.setOnCheckedChangeListener((v, on) -> edit(x -> x.morning = on ? new Limits.Window("morgens", MORNING_START, MORNING_END) : null));
         evening.setOnCheckedChangeListener((v, on) -> edit(x -> x.evening = on ? new Limits.Window("abends", EVENING_START, EVENING_END) : null));
         morningTime.setVisibility(a.morning != null ? View.VISIBLE : View.GONE);
@@ -107,6 +118,16 @@ public class LimitActivity extends Activity {
         used.setText(Usage.hasUsageAccess(this)
                 ? "Heute genutzt: " + Limits.duration((int) (Usage.todayMs(this, pkg) / Limits.MINUTE))
                 : "Nutzungszeit unbekannt: Nutzungsdatenzugriff fehlt (unten).");
+    }
+
+    private void pickPause() {
+        String[] labels = new String[PAUSES.length];
+        for (int i = 0; i < PAUSES.length; i++) labels[i] = PAUSES[i] == 0 ? "Keine" : Limits.duration(PAUSES[i]);
+        new AlertDialog.Builder(this)
+                .setTitle("Pause nach einer Session")
+                .setItems(labels, (d, which) -> edit(a -> a.pauseMinutes = PAUSES[which]))
+                .setNegativeButton("Abbrechen", null)
+                .show();
     }
 
     // Hours and minutes in 5-minute steps; "Aus" removes the daily limit.

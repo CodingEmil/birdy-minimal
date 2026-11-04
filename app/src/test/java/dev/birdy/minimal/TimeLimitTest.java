@@ -269,19 +269,19 @@ public class TimeLimitTest {
         assertEquals("Insta", ((TextView) a.findViewById(R.id.limit_app)).getText().toString());
         assertEquals("Tageslimit: aus  →", ((TextView) a.findViewById(R.id.limit_daily)).getText().toString());
         ((Switch) a.findViewById(R.id.limit_morning)).setChecked(true);
-        assertEquals(INSTA + "\t0\t300-540\t", prefs.getString("limits", ""));
+        assertEquals("a first limit also asks before each visit", INSTA + "\t0\t300-540\t\t1\t0", prefs.getString("limits", ""));
         assertEquals("05:00 bis 09:00 Uhr  →", ((TextView) a.findViewById(R.id.limit_morning_time)).getText().toString());
         ((Switch) a.findViewById(R.id.limit_evening)).setChecked(true);
-        assertEquals(INSTA + "\t0\t300-540\t1260-0", prefs.getString("limits", ""));
+        assertEquals(INSTA + "\t0\t300-540\t1260-0\t1\t0", prefs.getString("limits", ""));
         a.findViewById(R.id.limit_daily).performClick();
         ((android.app.AlertDialog) ShadowAlertDialog.getLatestAlertDialog()).getButton(DialogInterface.BUTTON_POSITIVE).performClick();
         shadowOf(Looper.getMainLooper()).idle(); // dialog buttons report their click through the message queue
-        assertEquals("1 hour is the suggested start", INSTA + "\t60\t300-540\t1260-0", prefs.getString("limits", ""));
+        assertEquals("1 hour is the suggested start", INSTA + "\t60\t300-540\t1260-0\t1\t0", prefs.getString("limits", ""));
         assertEquals("Tageslimit: 1 h  →", ((TextView) a.findViewById(R.id.limit_daily)).getText().toString());
         shadowOf(Looper.getMainLooper()).idle();
         shot(a, "13-limit");
         ((Switch) a.findViewById(R.id.limit_morning)).setChecked(false);
-        assertEquals(INSTA + "\t60\t\t1260-0", prefs.getString("limits", ""));
+        assertEquals(INSTA + "\t60\t\t1260-0\t1\t0", prefs.getString("limits", ""));
         a.findViewById(R.id.limit_clear).performClick();
         assertEquals("", prefs.getString("limits", ""));
         assertTrue(a.isFinishing());
@@ -307,16 +307,32 @@ public class TimeLimitTest {
     }
 
     @Test
-    public void setupListsAppsWithLimits() {
-        limits(INSTA + "\t45\t300-540\t\n" + TUBE + "\t0\t\t1260-420\ncom.not.installed\t10\t\t");
-        SetupActivity a = Robolectric.buildActivity(SetupActivity.class).setup().get();
-        android.widget.LinearLayout list = a.findViewById(R.id.limits_list);
+    public void limitsHaveTheirOwnSettingsPage() throws Exception {
+        limits(INSTA + "\t45\t300-540\t\n" + TUBE + "\t0\t\t1260-420\t1\t10\ncom.not.installed\t10\t\t");
+        SetupActivity setup = Robolectric.buildActivity(SetupActivity.class).setup().get();
+        assertEquals("2 Apps mit Limit · strenger Modus aus",
+                ((TextView) setup.findViewById(R.id.setup_limits_summary)).getText().toString());
+        setup.findViewById(R.id.setup_limits).performClick();
+        assertEquals(LimitsActivity.class.getName(), shadowOf(setup).getNextStartedActivity().getComponent().getClassName());
+
+        LimitsActivity page = Robolectric.buildActivity(LimitsActivity.class).setup().get();
+        android.widget.LinearLayout list = page.findViewById(R.id.limits_list);
         assertEquals(2, list.getChildCount());
         assertEquals("Insta\n45 min am Tag · morgens 05:00–09:00", ((TextView) list.getChildAt(0)).getText().toString());
+        assertEquals("Tube\nabends 21:00–07:00 · fragt, 10 min Pause", ((TextView) list.getChildAt(1)).getText().toString());
+        assertEquals(android.view.View.GONE, page.findViewById(R.id.limits_empty).getVisibility());
+        shot(page, "15-limits");
         list.getChildAt(1).performClick();
-        Intent edit = shadowOf(a).getNextStartedActivity();
+        Intent edit = shadowOf(page).getNextStartedActivity();
         assertEquals(TUBE, edit.getStringExtra(LimitActivity.PKG));
         assertEquals("Tube", edit.getStringExtra(LimitActivity.LABEL));
+    }
+
+    @Test
+    public void limitsPageWithoutLimitsInvitesToAddOne() {
+        LimitsActivity page = Robolectric.buildActivity(LimitsActivity.class).setup().get();
+        assertEquals(android.view.View.VISIBLE, page.findViewById(R.id.limits_empty).getVisibility());
+        assertEquals("Strenger Modus einschalten  →", ((TextView) page.findViewById(R.id.strict_service)).getText().toString());
     }
 
     @Test
@@ -419,7 +435,7 @@ public class TimeLimitTest {
         android.app.AlertDialog picker = latestDialog();
         press(picker, DialogInterface.BUTTON_POSITIVE);
         assertTrue(latestDialog() == picker);
-        assertEquals(INSTA + "\t60\t\t", prefs.getString("limits", ""));
+        assertEquals(INSTA + "\t60\t\t\t1\t0", prefs.getString("limits", ""));
     }
 
     @Test
@@ -449,5 +465,150 @@ public class TimeLimitTest {
     public void homeStaysQuietWithoutLimits() {
         Robolectric.buildActivity(MainActivity.class).setup();
         assertNull(ShadowAlertDialog.getLatestAlertDialog());
+    }
+
+    // --- Sessions: ask how long, then block, then pause ---
+
+    // The last started screen of the given class (skipping others), or null.
+    private Intent started(Class<?> screen) {
+        Intent next, found = null;
+        while ((next = shadowOf(app).getNextStartedActivity()) != null) {
+            if (next.getComponent() != null && screen.getName().equals(next.getComponent().getClassName())) found = next;
+        }
+        return found;
+    }
+
+    private SessionActivity sessionScreen(Intent intent) {
+        return Robolectric.buildActivity(SessionActivity.class, intent).setup().get();
+    }
+
+    private static java.util.List<String> choices(SessionActivity a) {
+        android.widget.LinearLayout list = a.findViewById(R.id.session_choices);
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (int i = 0; i < list.getChildCount(); i++) out.add(((TextView) list.getChildAt(i)).getText().toString());
+        return out;
+    }
+
+    private static void choose(SessionActivity a, String length) {
+        android.widget.LinearLayout list = a.findViewById(R.id.session_choices);
+        for (int i = 0; i < list.getChildCount(); i++) {
+            if (((TextView) list.getChildAt(i)).getText().toString().equals(length)) { list.getChildAt(i).performClick(); return; }
+        }
+        throw new AssertionError("no choice " + length + " in " + choices(a));
+    }
+
+    @Test
+    public void openingAsksHowLongThenOpensTheAppForThatLong() throws Exception {
+        now(14, 0);
+        limits(INSTA + "\t0\t\t\t1\t10");
+        front(INSTA);
+        Intent ask = started(SessionActivity.class);
+        assertNotNull("asked before the app may stay open", ask);
+        assertNull(started(BlockActivity.class));
+        SessionActivity a = sessionScreen(ask);
+        assertEquals("Bewusst öffnen", ((TextView) a.findViewById(R.id.session_title)).getText().toString());
+        assertEquals("Insta", ((TextView) a.findViewById(R.id.session_app)).getText().toString());
+        assertEquals("Wie lange möchtest du jetzt hier sein?", ((TextView) a.findViewById(R.id.session_question)).getText().toString());
+        assertEquals(java.util.Arrays.asList("5 min", "10 min", "15 min", "30 min"), choices(a));
+        assertEquals("Danach ist Insta 10 min gesperrt.", ((TextView) a.findViewById(R.id.session_note)).getText().toString());
+        shot(a, "14-session");
+        choose(a, "10 min");
+        Intent launch = shadowOf(a).getNextStartedActivity();
+        assertEquals(INSTA, launch.getPackage() != null ? launch.getPackage() : launch.getComponent().getPackageName());
+        assertTrue(a.isFinishing());
+        assertTrue(prefs.getString("sessions", "").startsWith(INSTA + "\t"));
+    }
+
+    @Test
+    public void sessionRunsOutThenPausesThenAsksAgain() {
+        now(14, 0);
+        limits(INSTA + "\t0\t\t\t1\t10");
+        front(INSTA);
+        choose(sessionScreen(started(SessionActivity.class)), "10 min");
+        shadowOf(app).clearNextStartedActivities();
+        front(INSTA); // the app opens: inside the session now
+        assertNull(started(SessionActivity.class));
+        idle(Duration.ofMinutes(9));
+        assertNull("still inside the 10 minutes", started(BlockActivity.class));
+        idle(Duration.ofMinutes(2));
+        Intent pause = started(BlockActivity.class);
+        assertNotNull("covered when the 10 minutes are up", pause);
+        assertEquals("Pause", pause.getStringExtra(BlockActivity.TITLE));
+        assertEquals("Deine Session ist vorbei. Wieder frei ab 14:20 Uhr.", pause.getStringExtra(BlockActivity.DETAIL));
+
+        idle(Duration.ofMinutes(4)); // 14:15, during the pause
+        front(INSTA);
+        assertEquals("Pause", started(BlockActivity.class).getStringExtra(BlockActivity.TITLE));
+        idle(Duration.ofMinutes(6)); // 14:21, pause over
+        front(INSTA);
+        assertNotNull("asks for the next session", started(SessionActivity.class));
+    }
+
+    @Test
+    public void withoutPauseItOffersAnotherRound() {
+        now(14, 0);
+        limits(INSTA + "\t0\t\t\t1\t0");
+        front(INSTA);
+        choose(sessionScreen(started(SessionActivity.class)), "5 min");
+        front(INSTA);
+        idle(Duration.ofSeconds(5 * 60 + 2));
+        Intent again = started(SessionActivity.class);
+        assertNotNull(again);
+        assertEquals("Deine Zeit ist um", again.getStringExtra(BlockActivity.TITLE));
+        assertEquals("Noch eine Runde?", again.getStringExtra(BlockActivity.DETAIL));
+    }
+
+    @Test
+    public void choicesStopAtWhatIsLeftToday() {
+        grantUsageAccess();
+        now(14, 0);
+        limits(INSTA + "\t30\t\t\t1\t0");
+        usage(INSTA, Usage.RESUMED, at(9, 0));
+        usage(INSTA, Usage.PAUSED, at(9, 18)); // 12 min left
+        front(INSTA);
+        SessionActivity a = sessionScreen(started(SessionActivity.class));
+        assertEquals(java.util.Arrays.asList("5 min", "10 min", "12 min"), choices(a));
+        assertEquals("Heute noch 12 min.", ((TextView) a.findViewById(R.id.session_note)).getText().toString());
+    }
+
+    @Test
+    public void quietTimeBeatsTheQuestion() {
+        now(22, 0);
+        limits(INSTA + "\t0\t\t1260-420\t1\t0");
+        front(INSTA);
+        Intent shown = shadowOf(app).getNextStartedActivity();
+        assertEquals("blocked, not asked", BlockActivity.class.getName(), shown.getComponent().getClassName());
+        assertEquals("Schonzeit abends", shown.getStringExtra(BlockActivity.TITLE));
+    }
+
+    @Test
+    public void notNowGoesHome() {
+        now(14, 0);
+        limits(INSTA + "\t0\t\t\t1\t0");
+        front(INSTA);
+        SessionActivity a = sessionScreen(started(SessionActivity.class));
+        a.findViewById(R.id.session_cancel).performClick();
+        assertTrue(shadowOf(a).getNextStartedActivity().hasCategory(Intent.CATEGORY_HOME));
+        assertTrue(a.isFinishing());
+        assertEquals("no session started", "", prefs.getString("sessions", ""));
+    }
+
+    @Test
+    public void limitScreenSetsAskAndPause() {
+        LimitActivity a = limitScreen().get();
+        ((Switch) a.findViewById(R.id.limit_ask)).setChecked(true);
+        assertEquals(INSTA + "\t0\t\t\t1\t0", prefs.getString("limits", ""));
+        assertEquals("Pause danach: keine  →", ((TextView) a.findViewById(R.id.limit_pause)).getText().toString());
+        a.findViewById(R.id.limit_pause).performClick();
+        android.app.AlertDialog d = latestDialog();
+        java.util.List<String> items = new java.util.ArrayList<>();
+        for (int i = 0; i < d.getListView().getAdapter().getCount(); i++) items.add(d.getListView().getAdapter().getItem(i).toString());
+        assertEquals(java.util.Arrays.asList("Keine", "5 min", "10 min", "15 min", "30 min", "1 h", "2 h"), items);
+        shadowOf(d).clickOnItem(2);
+        shadowOf(Looper.getMainLooper()).idle();
+        assertEquals(INSTA + "\t0\t\t\t1\t10", prefs.getString("limits", ""));
+        assertEquals("Pause danach: 10 min  →", ((TextView) a.findViewById(R.id.limit_pause)).getText().toString());
+        ((Switch) a.findViewById(R.id.limit_ask)).setChecked(false);
+        assertEquals(android.view.View.GONE, a.findViewById(R.id.limit_pause).getVisibility());
     }
 }

@@ -59,6 +59,11 @@
             </intent-filter>
         </activity>
 
+        <!-- Time limits settings page: all apps with limits and strict mode. -->
+        <activity
+            android:name=".LimitsActivity"
+            android:exported="false" />
+
         <!-- Edits the time limits of one app. -->
         <activity
             android:name=".LimitActivity"
@@ -67,6 +72,14 @@
         <!-- Covers a blocked app; own task, so leaving it never returns into the app. -->
         <activity
             android:name=".BlockActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:taskAffinity="dev.birdy.minimal.block" />
+
+        <!-- Asks how long a visit should be; same task as the block screen. -->
+        <activity
+            android:name=".SessionActivity"
             android:excludeFromRecents="true"
             android:exported="false"
             android:launchMode="singleTask"

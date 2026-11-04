@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings page for time limits: every app with limits, adding one, and the state of strict mode. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="32dp"
+        android:paddingTop="56dp"
+        android:paddingBottom="24dp">
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:layout_marginTop="0dp"
+            android:text="Einstellungen" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="-2dp"
+            android:fontVariationSettings="'wght' 250"
+            android:text="Zeitlimits"
+            android:textColor="@android:color/white"
+            android:textSize="48sp" />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:layout_marginTop="16dp"
+            android:text="Pro App ein Tageslimit, Schonzeiten morgens und abends, und vor jedem Öffnen die Frage, wie lange du bleiben willst."
+            android:textColor="#B3B3B3" />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="Apps mit Limit" />
+
+        <!-- Filled in code: one row per app with limits. -->
+        <LinearLayout
+            android:id="@+id/limits_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <TextView
+            android:id="@+id/limits_empty"
+            style="@style/Birdy.Hint"
+            android:layout_marginTop="6dp"
+            android:text="Noch keine. Füge eine App hinzu oder drück lange auf eine App, dann „Zeitlimit…“." />
+
+        <TextView
+            android:id="@+id/limits_add"
+            style="@style/Birdy.Line"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:text="App hinzufügen  →"
+            android:textColor="@color/item_text" />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="Strenger Modus" />
+
+        <include layout="@layout/strict_status" />
+    </LinearLayout>
+</ScrollView>

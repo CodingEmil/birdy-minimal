@@ -93,6 +93,30 @@
 
         <TextView
             style="@style/Birdy.Eyebrow"
+            android:text="Bewusst öffnen" />
+
+        <Switch
+            android:id="@+id/limit_ask"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Vorher fragen, wie lange" />
+
+        <TextView
+            android:id="@+id/limit_pause"
+            style="@style/Birdy.Line"
+            android:layout_marginTop="0dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="40dp"
+            android:textColor="@color/item_text" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Vor jedem Öffnen wählst du, wie lange du bleiben willst. Ist die Zeit um, sperrt Birdy die App und hält die Pause ein, unabhängig vom Tageslimit." />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
             android:text="Strenger Modus" />
 
         <include layout="@layout/strict_status" />

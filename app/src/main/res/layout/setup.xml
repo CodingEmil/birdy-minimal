@@ -124,6 +124,20 @@
             android:text="Auf dem Startscreen nach unten wischen öffnet die Benachrichtigungen, wie beim Wischen vom oberen Rand." />
 
         <TextView
+            android:id="@+id/setup_limits"
+            style="@style/Birdy.Line"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:text="Zeitlimits  →"
+            android:textColor="@color/item_text" />
+
+        <TextView
+            android:id="@+id/setup_limits_summary"
+            style="@style/Birdy.Hint" />
+
+        <TextView
             android:id="@+id/black_wallpaper"
             style="@style/Birdy.Line"
             android:clickable="true"
@@ -137,23 +151,6 @@
             style="@style/Birdy.Hint"
             android:text="Die App-Übersicht kommt vom System und zeigt dessen Hintergrundbild. In Schwarz geht sie nahtlos in Birdy über. Der Sperrbildschirm bleibt, wie er ist." />
 
-        <TextView
-            style="@style/Birdy.Eyebrow"
-            android:text="Zeitlimits" />
-
-        <TextView
-            style="@style/Birdy.Hint"
-            android:layout_marginTop="6dp"
-            android:text="Pro App ein Tageslimit und Schonzeiten morgens und abends. Lange auf eine App drücken, dann „Zeitlimit…“." />
-
-        <!-- Filled in code: one row per app with limits. -->
-        <LinearLayout
-            android:id="@+id/limits_list"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" />
-
-        <include layout="@layout/strict_status" />
 
         <Space
             android:layout_width="0dp"

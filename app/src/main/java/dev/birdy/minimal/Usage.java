@@ -112,11 +112,51 @@ final class Usage {
         return false;
     }
 
-    // The block decision shared by the launcher and the accessibility service; null when allowed.
+    // Everything the rules of one app look at, right now.
+    static Limits.Moment moment(Context context, Limits.AppLimit limit) {
+        long used = limit.dailyMinutes > 0 ? todayMs(context, limit.pkg) : 0;
+        long[] session = session(context, limit.pkg);
+        return new Limits.Moment(used, msOfDay(), now(), session[0], session[1]);
+    }
+
+    // The decision shared by the launcher and the accessibility service; null when allowed.
     static Limits.Block check(Context context, Limits.AppLimit limit) {
         if (limit == null) return null;
-        long used = limit.dailyMinutes > 0 ? todayMs(context, limit.pkg) : 0;
-        return limit.check(used, msOfDay());
+        return limit.check(moment(context, limit));
+    }
+
+    // Sessions: one line per app, package TAB planned end TAB end of the pause after it (epoch ms).
+    static long[] session(Context context, String pkg) {
+        for (String line : prefs(context).getString("sessions", "").split("\n")) {
+            String[] p = line.split("\t");
+            if (p.length == 3 && p[0].equals(pkg)) {
+                try {
+                    return new long[] {Long.parseLong(p[1]), Long.parseLong(p[2])};
+                } catch (NumberFormatException e) {
+                    break;
+                }
+            }
+        }
+        return new long[] {0, 0};
+    }
+
+    // Starts a session of the given length now; the pause follows it. Lines of finished pauses are dropped.
+    static void startSession(Context context, Limits.AppLimit limit, int minutes) {
+        long now = now(), end = now + minutes * Limits.MINUTE, pauseEnd = end + limit.pauseMinutes * Limits.MINUTE;
+        StringBuilder out = new StringBuilder(limit.pkg + "\t" + end + "\t" + pauseEnd);
+        for (String line : prefs(context).getString("sessions", "").split("\n")) {
+            String[] p = line.split("\t");
+            if (p.length != 3 || p[0].equals(limit.pkg)) continue;
+            try {
+                if (Long.parseLong(p[2]) > now || Long.parseLong(p[1]) > now) out.append('\n').append(line);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        prefs(context).edit().putString("sessions", out.toString()).apply();
+    }
+
+    private static android.content.SharedPreferences prefs(Context context) {
+        return context.getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE);
     }
 
     static Limits load(Context context) {
