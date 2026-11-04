@@ -39,8 +39,18 @@ jobs:
           name: birdy-apk
           path: birdy.apk
 
+      # v1.4 -> release from the "## 1.4" changelog section; v1.4-beta.1 -> pre-release from "## Unveröffentlicht".
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" birdy.apk --title "Birdy $GITHUB_REF_NAME" --generate-notes
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if [[ "$version" == *-* ]]; then
+            heading="Unveröffentlicht"; extra=(--prerelease); title="Birdy $GITHUB_REF_NAME (Vorabversion)"
+          else
+            heading="$version"; extra=(); title="Birdy $GITHUB_REF_NAME"
+          fi
+          awk -v h="## $heading" '$0 == h { on = 1; next } on && /^## / { exit } on' CHANGELOG.md > notes.md
+          if grep -q '[^[:space:]]' notes.md; then extra+=(--notes-file notes.md); else extra+=(--generate-notes); fi
+          gh release create "$GITHUB_REF_NAME" birdy.apk --title "$title" "${extra[@]}"

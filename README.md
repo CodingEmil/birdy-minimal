@@ -14,7 +14,7 @@ Ein minimaler Android-Launcher: schwarz-weiß, reines Schwarz für OLED, schnell
 
 ## Installieren
 
-APK aus den [Releases](../../releases/latest) laden und installieren. Dann die App „Birdy“ öffnen: Sie erklärt kurz, wie du Birdy als Startbildschirm festlegst, und springt direkt in die passende Einstellung.
+APK aus den [Releases](../../releases/latest) laden (Neuerungen: [CHANGELOG](CHANGELOG.md)) und installieren. Dann die App „Birdy“ öffnen: Sie erklärt kurz, wie du Birdy als Startbildschirm festlegst, und springt direkt in die passende Einstellung.
 Ab Android 8.
 
 ## Bauen

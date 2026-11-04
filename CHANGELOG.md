@@ -1,0 +1,26 @@
+# Changelog
+
+Neue Funktionen kommen sofort unter „Unveröffentlicht“. Vorabversionen (`v1.4-beta.1`, …) zeigen diesen Abschnitt als Beschreibung.
+Beim vollen Release wird die Überschrift zur Versionsnummer (`## 1.4`) und darüber ein neuer, leerer Abschnitt „Unveröffentlicht“ angelegt.
+
+## Unveröffentlicht
+
+### Neu
+- **Gruppen auf dem Startscreen:** Lange auf eine App drücken → „Zu Gruppe hinzufügen…“ legt sie in eine bestehende oder neue Gruppe. Die App wird kopiert und bleibt in der Liste. Antippen klappt die Gruppe auf, lange drücken wählt Apps per Checkliste aus, benennt um oder löscht die Gruppe. Gruppen zählen zu den 7 Plätzen.
+- **Herunterwischen öffnet die Benachrichtigungen**, wie auf Pixel-Handys. Abschaltbar in der Birdy-App.
+- **Beim Hochwischen gleich tippen** (Einstellung): Die Tastatur geht mit der App-Liste auf.
+- **Suchtreffer unten** (Einstellung): Treffer stehen beim Suchen über dem Suchfeld, der beste ganz unten am Daumen.
+- **Bester Suchtreffer hervorgehoben:** Er bleibt weiß, die übrigen werden grau. Enter öffnet ihn.
+
+### Verbessert
+- Suche: Apps, deren Name mit dem Suchbegriff beginnt, kommen vor Apps, bei denen nur ein späteres Wort passt („s“ → Signal, Slack, Spotify, dann Play Store).
+
+### Behoben
+- Nach dem Zurückkehren aus einer App (z. B. mit der Zurück-Geste) war die App-Liste noch offen, statt auf dem Startscreen zu landen.
+
+### Intern
+- UI-Tests mit Robolectric, die die echte Startscreen-Activity bedienen. Die CI baut mit JDK 21.
+
+## 1.3
+
+Oft genutzte Apps oben in der Liste, Sortierung nach Installationsdatum, schwarzer Hintergrund für die App-Übersicht. Ältere Versionen: siehe [Releases](../../releases).
