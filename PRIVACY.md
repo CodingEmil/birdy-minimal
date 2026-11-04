@@ -33,9 +33,9 @@ Birdy richtet sich nicht speziell an Kinder und sammelt von niemandem Daten.
 
 ## Kontakt
 
-Entwickler: CodingEmil. Fragen und Hinweise bitte als Issue unter https://github.com/CodingEmil/birdy-minimal/issues
-
-<!-- Vor der Veröffentlichung im Play Store: hier eine E-Mail-Adresse für Datenschutzanfragen eintragen. -->
+Entwickler: CodingEmil
+E-Mail: e43399274@gmail.com
+Fragen und Hinweise auch gern als Issue unter https://github.com/CodingEmil/birdy-minimal/issues
 
 ---
 
@@ -47,4 +47,4 @@ Birdy is a minimal Android launcher (package `dev.birdy.minimal`). **Birdy colle
 - **Accessibility service "Birdy Zeitlimits"** (only if you turn on strict mode) is used solely to learn which app comes to the foreground (its package name), so blocked apps can be covered even when opened from notifications or Recents. Birdy does not read screen content, input or text, does not perform actions in other apps and transmits nothing. Birdy shows a disclosure and asks for consent before you enable it.
 - No ads, no analytics, no accounts, no third parties.
 
-Contact: https://github.com/CodingEmil/birdy-minimal/issues
+Contact: e43399274@gmail.com · https://github.com/CodingEmil/birdy-minimal/issues

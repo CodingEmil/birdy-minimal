@@ -6,7 +6,6 @@ Schritt für Schritt durch die Play Console, mit allen Antworten zum Kopieren. T
 
 - [ ] Branch nach `main` bringen, damit die Datenschutzerklärung unter der festen Adresse erreichbar ist:
       `https://github.com/CodingEmil/birdy-minimal/blob/main/PRIVACY.md`
-- [ ] In `PRIVACY.md` unten eine E-Mail-Adresse für Datenschutzanfragen eintragen (Google verlangt einen Kontakt).
 - [ ] Ein Tag setzen, z. B. `v1.4-beta.1`. Der Build dazu hat eine sinnvolle Versionsnummer („1.4-beta.1“ statt „dev“).
 - [ ] Aus dem Build-Lauf das Artefakt **birdy-aab** laden (enthält `birdy.aab`). Das ist die Datei für die Play Console.
 
@@ -90,7 +89,7 @@ Texte aus [listing.md](listing.md), Grafiken aus diesem Ordner:
 - Feature-Grafik: `feature-1024x500.png`
 - Smartphone-Screenshots: `screenshot-1-…` bis `screenshot-7-…`, in dieser Reihenfolge
 
-Kategorie: **Personalisierung**. Kontakt-E-Mail ist Pflicht (wird öffentlich angezeigt).
+Kategorie: **Personalisierung**. Kontakt-E-Mail (Pflicht, wird öffentlich angezeigt): `e43399274@gmail.com`
 
 ## 6. Testen und veröffentlichen
 
