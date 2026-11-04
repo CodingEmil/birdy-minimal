@@ -196,7 +196,10 @@ public class LimitActivity extends Activity {
         usageRow.setText(usage ? "Nutzungsdatenzugriff: erlaubt ✓" : "Nutzungsdatenzugriff erlauben  →");
         serviceRow.setText(service ? "Strenger Modus: an ✓" : "Strenger Modus einschalten  →");
         usageRow.setOnClickListener(v -> Grants.open(activity, new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)));
-        serviceRow.setOnClickListener(v -> Grants.open(activity, new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)));
+        serviceRow.setOnClickListener(v -> {
+            if (service) Grants.open(activity, new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)); // to switch it off
+            else Grants.discloseStrictMode(activity, null);
+        });
         root.findViewById(R.id.strict_service_hint).setVisibility(service ? View.GONE : View.VISIBLE);
         root.findViewById(R.id.strict_app_info).setVisibility(service ? View.GONE : View.VISIBLE);
         root.findViewById(R.id.strict_app_info).setOnClickListener(v -> Grants.open(activity, Grants.appInfo(activity)));

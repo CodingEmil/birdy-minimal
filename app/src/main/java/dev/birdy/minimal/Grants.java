@@ -15,6 +15,7 @@ import java.util.List;
 // Usage access only matters for daily limits; strict mode matters for every limit.
 final class Grants {
     static final String WARNED = "grantsWarned"; // set when the warning was shown, cleared once all is set again
+    static final String PRIVACY_URL = "https://github.com/CodingEmil/birdy-minimal/blob/main/PRIVACY.md";
 
     private Grants() {}
 
@@ -64,8 +65,12 @@ final class Grants {
                 .setMessage(message)
                 .setNegativeButton("Später", null)
                 .setPositiveButton("Jetzt einrichten", (d, w) -> {
-                    if (onSetup != null) onSetup.run();
-                    open(activity, new Intent(usage ? Settings.ACTION_USAGE_ACCESS_SETTINGS : Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                    if (usage) {
+                        if (onSetup != null) onSetup.run();
+                        open(activity, new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS));
+                    } else {
+                        discloseStrictMode(activity, onSetup);
+                    }
                 });
         if (!usage) dialog.setNeutralButton("App-Info", (d, w) -> {
             if (onSetup != null) onSetup.run();
@@ -74,6 +79,27 @@ final class Grants {
         dialog.show();
         activity.getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE).edit().putBoolean(WARNED, true).apply();
         return true;
+    }
+
+    // Shown every time before Birdy sends someone to switch its accessibility service on: what it does with it,
+    // what it never does, and a choice. Google Play requires this "prominent disclosure" before the grant.
+    static void discloseStrictMode(Activity activity, Runnable onAgree) {
+        new AlertDialog.Builder(activity)
+                .setTitle("Strenger Modus nutzt eine Bedienungshilfe")
+                .setMessage("Birdy nutzt die Android-Bedienungshilfe (AccessibilityService) nur, um zu erkennen, welche App "
+                        + "gerade im Vordergrund ist. So kann Birdy Apps sperren, deren Tageslimit aufgebraucht ist, deren "
+                        + "Schonzeit läuft oder deren Session vorbei ist, auch wenn sie über Benachrichtigungen oder "
+                        + "„Zuletzt verwendet“ geöffnet werden.\n\n"
+                        + "Birdy liest dabei keine Bildschirminhalte, keine Eingaben und keine Texte, führt keine Aktionen "
+                        + "für dich aus und überträgt nichts. Alles bleibt auf diesem Gerät.\n\n"
+                        + "Du kannst den strengen Modus jederzeit in den Bedienungshilfen wieder ausschalten.")
+                .setNegativeButton("Ablehnen", null)
+                .setNeutralButton("Datenschutz", (d, w) -> open(activity, new Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_URL))))
+                .setPositiveButton("Zustimmen", (d, w) -> {
+                    if (onAgree != null) onAgree.run();
+                    open(activity, new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+                })
+                .show();
     }
 
     static Intent appInfo(Context context) {

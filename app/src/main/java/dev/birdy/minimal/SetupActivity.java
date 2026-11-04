@@ -37,6 +37,8 @@ public class SetupActivity extends Activity {
         bindSwitch(R.id.bottom, "bottom", prefs);
         bindSwitch(R.id.shade, "shade", prefs, true);
         findViewById(R.id.setup_limits).setOnClickListener(v -> startActivity(new Intent(this, LimitsActivity.class)));
+        findViewById(R.id.privacy).setOnClickListener(v ->
+                Grants.open(this, new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(Grants.PRIVACY_URL))));
         findViewById(R.id.black_wallpaper).setOnClickListener(v -> new AlertDialog.Builder(this)
                 .setTitle("Hintergrund schwarz machen?")
                 .setMessage("Dein aktuelles Hintergrundbild wird durch Schwarz ersetzt. Der Sperrbildschirm bleibt, wie er ist.")

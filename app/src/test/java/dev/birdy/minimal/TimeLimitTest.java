@@ -294,6 +294,11 @@ public class TimeLimitTest {
         assertEquals("Nutzungsdatenzugriff erlauben  →", ((TextView) a.findViewById(R.id.strict_usage)).getText().toString());
         assertEquals("Strenger Modus einschalten  →", ((TextView) a.findViewById(R.id.strict_service)).getText().toString());
         a.findViewById(R.id.strict_service).performClick();
+        assertNull("first the disclosure, not the settings", shadowOf(a).getNextStartedActivity());
+        android.app.AlertDialog disclosure = (android.app.AlertDialog) ShadowAlertDialog.getLatestAlertDialog();
+        assertEquals("Strenger Modus nutzt eine Bedienungshilfe", shadowOf(disclosure).getTitle().toString());
+        disclosure.getButton(DialogInterface.BUTTON_POSITIVE).performClick();
+        shadowOf(Looper.getMainLooper()).idle();
         assertEquals(Settings.ACTION_ACCESSIBILITY_SETTINGS, shadowOf(a).getNextStartedActivity().getAction());
 
         grantUsageAccess();
@@ -419,6 +424,7 @@ public class TimeLimitTest {
         assertFalse(message(next).contains("Nutzungsdatenzugriff"));
         assertTrue(message(next).contains("Strenger Modus"));
         press(next, DialogInterface.BUTTON_POSITIVE);
+        press(latestDialog(), DialogInterface.BUTTON_POSITIVE); // "Zustimmen" in the disclosure
         assertEquals(Settings.ACTION_ACCESSIBILITY_SETTINGS, shadowOf(a).getNextStartedActivity().getAction());
         enableStrictMode();
         c.pause().resume();
@@ -610,5 +616,49 @@ public class TimeLimitTest {
         assertEquals("Pause danach: 10 min  →", ((TextView) a.findViewById(R.id.limit_pause)).getText().toString());
         ((Switch) a.findViewById(R.id.limit_ask)).setChecked(false);
         assertEquals(android.view.View.GONE, a.findViewById(R.id.limit_pause).getVisibility());
+    }
+
+    // --- Google Play: prominent disclosure before the accessibility grant ---
+
+    @Test
+    public void disclosureSaysWhatStrictModeDoesAndDoesNot() {
+        LimitActivity a = limitScreen().get();
+        a.findViewById(R.id.strict_service).performClick();
+        android.app.AlertDialog d = latestDialog();
+        String text = message(d);
+        assertTrue(text.contains("nur, um zu erkennen, welche App gerade im Vordergrund ist"));
+        assertTrue(text.contains("keine Bildschirminhalte, keine Eingaben und keine Texte"));
+        assertTrue(text.contains("überträgt nichts"));
+        assertEquals("Ablehnen", d.getButton(DialogInterface.BUTTON_NEGATIVE).getText().toString());
+        assertEquals("Zustimmen", d.getButton(DialogInterface.BUTTON_POSITIVE).getText().toString());
+        press(d, DialogInterface.BUTTON_NEUTRAL);
+        Intent privacy = shadowOf(a).getNextStartedActivity();
+        assertEquals(Intent.ACTION_VIEW, privacy.getAction());
+        assertEquals(Grants.PRIVACY_URL, privacy.getDataString());
+    }
+
+    @Test
+    public void decliningTheDisclosureOpensNothing() {
+        LimitActivity a = limitScreen().get();
+        a.findViewById(R.id.strict_service).performClick();
+        press(latestDialog(), DialogInterface.BUTTON_NEGATIVE);
+        assertNull(shadowOf(a).getNextStartedActivity());
+    }
+
+    @Test
+    public void warningLeadsThroughTheDisclosureToo() {
+        grantUsageAccess();
+        LimitActivity a = limitScreen().get();
+        ((Switch) a.findViewById(R.id.limit_evening)).setChecked(true);
+        press(latestDialog(), DialogInterface.BUTTON_POSITIVE); // "Jetzt einrichten"
+        assertNull(shadowOf(a).getNextStartedActivity());
+        assertEquals("Strenger Modus nutzt eine Bedienungshilfe", shadowOf(latestDialog()).getTitle().toString());
+    }
+
+    @Test
+    public void privacyPolicyIsOneTapFromTheBirdyApp() {
+        SetupActivity setup = Robolectric.buildActivity(SetupActivity.class).setup().get();
+        setup.findViewById(R.id.privacy).performClick();
+        assertEquals(Grants.PRIVACY_URL, shadowOf(setup).getNextStartedActivity().getDataString());
     }
 }

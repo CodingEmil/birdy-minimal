@@ -24,6 +24,7 @@ Beim vollen Release wird die Überschrift zur Versionsnummer (`## 1.4`) und dar�
 - Nach dem Zurückkehren aus einer App (z. B. mit der Zurück-Geste) war die App-Liste noch offen, statt auf dem Startscreen zu landen.
 
 ### Intern
+- Vorbereitung für Google Play: Hinweis mit Zustimmung, bevor Birdy zur Bedienungshilfe führt; Datenschutzerklärung (`PRIVACY.md`, verlinkt in der Birdy-App); die CI baut zusätzlich ein App Bundle (AAB); Store-Texte, Grafiken und eine Anleitung für die Play Console unter `docs/play/`.
 - UI-Tests mit Robolectric, die die echte Startscreen-Activity bedienen. Die CI baut mit JDK 21.
 
 ## 1.3

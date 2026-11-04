@@ -152,6 +152,21 @@
             android:text="Die App-Übersicht kommt vom System und zeigt dessen Hintergrundbild. In Schwarz geht sie nahtlos in Birdy über. Der Sperrbildschirm bleibt, wie er ist." />
 
 
+        <TextView
+            android:id="@+id/privacy"
+            style="@style/Birdy.Line"
+            android:layout_marginTop="32dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:text="Datenschutz  →"
+            android:textColor="@color/item_text" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Birdy sammelt nichts und sendet nichts. Alle Einstellungen und Zeiten bleiben auf diesem Gerät." />
+
         <Space
             android:layout_width="0dp"
             android:layout_height="0dp"

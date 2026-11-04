@@ -21,7 +21,7 @@ jobs:
           distribution: temurin
           java-version: 21 # Robolectric needs 21 for SDK 36; the app itself still targets Java 17
 
-      - name: Build release APK
+      - name: Build release APK and Play bundle
         env:
           KEYSTORE_B64: ${{ secrets.BIRDY_KEYSTORE_B64 }}
           BIRDY_KEYSTORE_PASSWORD: ${{ secrets.BIRDY_KEYSTORE_PASSWORD }}
@@ -31,13 +31,20 @@ jobs:
             echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/birdy.jks"
             export BIRDY_KEYSTORE="$RUNNER_TEMP/birdy.jks"
           fi
-          ./gradlew testReleaseUnitTest assembleRelease --no-daemon
+          ./gradlew testReleaseUnitTest assembleRelease bundleRelease --no-daemon
           mv app/build/outputs/apk/release/app-release.apk birdy.apk
+          mv app/build/outputs/bundle/release/app-release.aab birdy.aab
 
       - uses: actions/upload-artifact@v7
         with:
           name: birdy-apk
           path: birdy.apk
+
+      # For the Play Console: upload this bundle (signed with the same key as the APK).
+      - uses: actions/upload-artifact@v7
+        with:
+          name: birdy-aab
+          path: birdy.aab
 
       # v1.4 -> release from the "## 1.4" changelog section; v1.4-beta.1 -> pre-release from "## Unveröffentlicht".
       - name: Publish release
