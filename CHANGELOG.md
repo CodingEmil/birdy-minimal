@@ -4,7 +4,10 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 
 ## Unveröffentlicht
 
+## 1.4-beta.4
+
 ### Neu
+- **Session-Zeit als Balken:** Während einer Session zeigt eine dünne Leiste unter der Statusleiste, wie viel Zeit noch bleibt. Sie erscheint nur in dieser App und braucht den strengen Modus.
 - **Temperatur neben dem Datum:** Birdy zeigt die aktuelle Temperatur aus Pixel Weather, Antippen öffnet die App. Einschalten in der Birdy-App; Samsung Wetter ist eingebaut, aber noch ungetestet.
 
 ### Verbessert
