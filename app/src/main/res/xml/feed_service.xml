@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Shorts & Reels: only YouTube and Instagram, and only their view ids (flagReportViewIds), to recognise the
-     full-screen short-video player. No text is read; the one action is Back (or Home). -->
+     full-screen short-video player, also in picture-in-picture windows (flagRetrieveInteractiveWindows). No text is
+     read; the only actions are Back (or Home) and, for a PiP window, a drag onto the system's close target. -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeViewScrolled"
     android:accessibilityFeedbackType="feedbackGeneric"
-    android:accessibilityFlags="flagReportViewIds"
+    android:accessibilityFlags="flagReportViewIds|flagRetrieveInteractiveWindows"
+    android:canPerformGestures="true"
     android:canRetrieveWindowContent="true"
     android:description="@string/feed_service_description"
     android:isAccessibilityTool="false"

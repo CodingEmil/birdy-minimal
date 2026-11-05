@@ -108,7 +108,8 @@ final class Grants {
                 .setTitle("Shorts & Reels nutzt eine Bedienungshilfe")
                 .setMessage("Birdy nutzt dafür eine eigene Android-Bedienungshilfe (AccessibilityService) „Birdy Shorts & Reels“. "
                         + "Sie ist nur in YouTube und Instagram aktiv und prüft dort nur, ob der Shorts- bzw. Reels-Player "
-                        + "offen ist. Ist er offen und gesperrt, drückt Birdy für dich „Zurück“.\n\n"
+                        + "offen ist, auch im kleinen Bild-im-Bild-Fenster. Ist er offen und gesperrt, drückt Birdy für dich "
+                        + "„Zurück“ bzw. zieht das Bild-im-Bild-Fenster auf „Schließen“.\n\n"
                         + "Birdy liest dabei keine Texte, Kommentare, Nachrichten oder Eingaben, schaut in keine anderen Apps, "
                         + "speichert nichts darüber und überträgt nichts. Alles bleibt auf diesem Gerät.\n\n"
                         + "Du kannst sie jederzeit in den Bedienungshilfen wieder ausschalten.")

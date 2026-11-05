@@ -65,6 +65,14 @@ final class Feeds {
         return false;
     }
 
+    static final long DRAG_MS = 450;
+
+    // Start and end of the drag that closes a picture-in-picture window: from its middle down to the close target
+    // Android shows at the bottom centre while a PiP window is dragged (about 100 dp above the bottom edge).
+    static int[] dismissDrag(Rect pip, int screenWidth, int screenHeight, float density) {
+        return new int[] {pip.centerX(), pip.centerY(), screenWidth / 2, screenHeight - Math.round(100 * density)};
+    }
+
     static boolean serviceOn(Context context) {
         String enabled = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
         if (TextUtils.isEmpty(enabled)) return false;

@@ -63,6 +63,25 @@ public class FeedsTest {
     }
 
     @Test
+    public void pictureInPictureIsDraggedFromItsMiddleToTheCloseTarget() {
+        Rect pip = new Rect(600, 1600, 1000, 1900); // bottom right, as Android places it
+        int[] drag = Feeds.dismissDrag(pip, 1080, 2400, 3f);
+        assertEquals(800, drag[0]);
+        assertEquals(1750, drag[1]);
+        assertEquals("bottom centre", 540, drag[2]);
+        assertEquals(2100, drag[3]);
+        assertTrue("a PiP window full of Shorts counts as showing them",
+                Feeds.showing(new Feeds.Screen() {
+                    @Override public int height() { return 300; }
+                    @Override public List<Rect> visible(String id) {
+                        List<Rect> out = new ArrayList<>();
+                        if (id.endsWith("reel_recycler")) out.add(new Rect(600, 1600, 1000, 1900));
+                        return out;
+                    }
+                }, Feeds.Feed.SHORTS));
+    }
+
+    @Test
     public void packagesMapToTheirFeed() {
         assertEquals(Feeds.Feed.SHORTS, Feeds.forPackage("com.google.android.youtube"));
         assertEquals(Feeds.Feed.REELS, Feeds.forPackage("com.instagram.android"));
