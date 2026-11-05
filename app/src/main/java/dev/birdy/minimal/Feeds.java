@@ -2,10 +2,12 @@ package dev.birdy.minimal;
 
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Rect;
 import android.provider.Settings;
 import android.text.TextUtils;
 
+import java.time.LocalDate;
 import java.util.List;
 
 // Endless short-video feeds inside apps: YouTube Shorts and Instagram Reels. FeedService looks at the view ids of
@@ -47,6 +49,41 @@ final class Feeds {
 
     static boolean blocked(Context context, Feed feed) {
         return context.getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE).getBoolean(feed.pref, false);
+    }
+
+    // Minutes a day the feed may play before Birdy leaves it; 0 leaves it right away.
+    static final int[] ALLOWANCES = {0, 15, 30, 60, 180};
+    static final long MINUTE = 60_000;
+    private static final String USED = "feeds_used"; // own file: written every second while a feed plays
+
+    static int allowedMinutes(Context context, Feed feed) {
+        return context.getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE).getInt(feed.pref + "Minutes", 0);
+    }
+
+    static void setAllowedMinutes(Context context, Feed feed, int minutes) {
+        context.getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE).edit().putInt(feed.pref + "Minutes", minutes).apply();
+    }
+
+    // Time spent in the feed's player today; starts again at 0 each day.
+    static long usedTodayMs(Context context, Feed feed) {
+        SharedPreferences used = context.getSharedPreferences(USED, Context.MODE_PRIVATE);
+        return used.getLong(feed.pref + "Day", -1) == LocalDate.now().toEpochDay() ? used.getLong(feed.pref + "Ms", 0) : 0;
+    }
+
+    static void addUsed(Context context, Feed feed, long ms) {
+        context.getSharedPreferences(USED, Context.MODE_PRIVATE).edit()
+                .putLong(feed.pref + "Day", LocalDate.now().toEpochDay())
+                .putLong(feed.pref + "Ms", usedTodayMs(context, feed) + ms)
+                .apply();
+    }
+
+    // Blocked and today's allowance spent: time to leave the feed.
+    static boolean usedUp(Context context, Feed feed) {
+        return blocked(context, feed) && usedTodayMs(context, feed) >= allowedMinutes(context, feed) * MINUTE;
+    }
+
+    static String allowanceLabel(int minutes) {
+        return minutes == 0 ? "sofort gesperrt" : Limits.duration(minutes);
     }
 
     static boolean anyBlocked(Context context) {

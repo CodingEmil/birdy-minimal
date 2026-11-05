@@ -178,6 +178,17 @@
             android:minHeight="48dp"
             android:text="YouTube Shorts sperren" />
 
+        <TextView
+            android:id="@+id/allow_shorts"
+            style="@style/Birdy.Line"
+            android:layout_marginTop="0dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:textColor="@color/item_text_dim"
+            android:visibility="gone" />
+
         <Switch
             android:id="@+id/block_reels"
             style="@style/Birdy.Line"
@@ -185,8 +196,19 @@
             android:text="Instagram Reels sperren" />
 
         <TextView
+            android:id="@+id/allow_reels"
+            style="@style/Birdy.Line"
+            android:layout_marginTop="0dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center_vertical"
+            android:minHeight="48dp"
+            android:textColor="@color/item_text_dim"
+            android:visibility="gone" />
+
+        <TextView
             style="@style/Birdy.Hint"
-            android:text="YouTube und Instagram bleiben nutzbar. Öffnest du Shorts oder Reels, geht Birdy sofort zurück. Braucht die Bedienungshilfe „Birdy Shorts &amp; Reels“." />
+            android:text="YouTube und Instagram bleiben nutzbar. Öffnest du Shorts oder Reels, geht Birdy zurück: sofort oder wenn deine Zeit für heute um ist. Braucht die Bedienungshilfe „Birdy Shorts &amp; Reels“." />
 
         <TextView
             android:id="@+id/feeds_setup"

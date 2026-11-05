@@ -53,8 +53,8 @@ public class SetupActivity extends Activity {
             prefs.edit().putBoolean("contacts", on).apply();
         });
         bindWeatherSwitch(prefs);
-        bindFeedSwitch(R.id.block_shorts, Feeds.Feed.SHORTS, prefs);
-        bindFeedSwitch(R.id.block_reels, Feeds.Feed.REELS, prefs);
+        bindFeedSwitch(R.id.block_shorts, R.id.allow_shorts, Feeds.Feed.SHORTS, prefs);
+        bindFeedSwitch(R.id.block_reels, R.id.allow_reels, Feeds.Feed.REELS, prefs);
         findViewById(R.id.feeds_setup).setOnClickListener(v -> Grants.discloseFeeds(this));
         findViewById(R.id.setup_limits).setOnClickListener(v -> startActivity(new Intent(this, LimitsActivity.class)));
         findViewById(R.id.privacy).setOnClickListener(v ->
@@ -146,14 +146,45 @@ public class SetupActivity extends Activity {
     }
 
     // Turning a feed on without its accessibility service asks for that service right away.
-    private void bindFeedSwitch(int id, Feeds.Feed feed, SharedPreferences prefs) {
+    // Under it, how long a day the feed may play first; shown while the switch is on.
+    private void bindFeedSwitch(int id, int allowanceId, Feeds.Feed feed, SharedPreferences prefs) {
         Switch view = findViewById(id);
+        TextView allowance = findViewById(allowanceId);
         view.setChecked(Feeds.blocked(this, feed));
         view.setOnCheckedChangeListener((v, on) -> {
             prefs.edit().putBoolean(feed.pref, on).apply();
             renderFeedsSetup();
+            renderAllowance(allowance, feed);
             if (on && !Feeds.serviceOn(this)) Grants.discloseFeeds(this);
         });
+        allowance.setOnClickListener(v -> chooseAllowance(allowance, feed));
+        renderAllowance(allowance, feed);
+    }
+
+    private void renderAllowance(TextView view, Feeds.Feed feed) {
+        view.setVisibility(Feeds.blocked(this, feed) ? View.VISIBLE : View.GONE);
+        int minutes = Feeds.allowedMinutes(this, feed);
+        String text = "Pro Tag: " + Feeds.allowanceLabel(minutes);
+        if (minutes > 0) text += " · heute " + Limits.duration((int) (Feeds.usedTodayMs(this, feed) / Feeds.MINUTE));
+        view.setText(text + "  →");
+    }
+
+    private void chooseAllowance(TextView view, Feeds.Feed feed) {
+        String[] labels = new String[Feeds.ALLOWANCES.length];
+        int checked = 0;
+        for (int i = 0; i < labels.length; i++) {
+            labels[i] = Feeds.ALLOWANCES[i] == 0 ? "Sofort sperren" : Limits.duration(Feeds.ALLOWANCES[i]) + " am Tag";
+            if (Feeds.ALLOWANCES[i] == Feeds.allowedMinutes(this, feed)) checked = i;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle(feed.label + " pro Tag")
+                .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    Feeds.setAllowedMinutes(this, feed, Feeds.ALLOWANCES[which]);
+                    renderAllowance(view, feed);
+                    dialog.dismiss();
+                })
+                .setNegativeButton("Abbrechen", null)
+                .show();
     }
 
     // "Bedienungshilfe einschalten" shows while a feed is blocked but the service is off.
@@ -172,6 +203,8 @@ public class SetupActivity extends Activity {
         action.setText(active ? "Launcher wechseln" : "Als Startbildschirm festlegen");
         renderLimitsSummary();
         renderFeedsSetup();
+        renderAllowance(findViewById(R.id.allow_shorts), Feeds.Feed.SHORTS); // today's minutes move on
+        renderAllowance(findViewById(R.id.allow_reels), Feeds.Feed.REELS);
     }
 
     // One line under "Zeitlimits": how many apps, and whether strict mode is on.

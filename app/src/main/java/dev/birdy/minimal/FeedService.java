@@ -10,6 +10,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.Rect;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.view.accessibility.AccessibilityEvent;
 import android.util.DisplayMetrics;
@@ -24,11 +25,12 @@ import java.util.List;
 
 // "Shorts & Reels": an accessibility service of its own, limited to YouTube and Instagram
 // (res/xml/feed_service.xml). It looks only for the view ids of their short-video players, nothing else, and
-// when a blocked one fills the screen it presses Back and then Home; a blocked feed in a
-// picture-in-picture window is dragged onto the close target. Strict mode's service
-// stays as it was: it never reads window content.
+// when a blocked one fills the screen it counts the time against the day's allowance. Once that is spent it presses
+// Back and then Home; a blocked feed in a picture-in-picture window is dragged onto the close target.
+// Strict mode's service stays as it was: it never reads window content.
 public class FeedService extends AccessibilityService {
     static final long THROTTLE = 250, BACK_MS = 200, NOTICE_MS = 3_000;
+    static final long TICK = 1_000, MAX_GAP = 2 * TICK; // while a feed plays: look once a second, count at most a gap
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Feeds.Guard guard = new Feeds.Guard(), pipGuard = new Feeds.Guard();
@@ -36,6 +38,8 @@ public class FeedService extends AccessibilityService {
     private boolean checkPending;
     private long lastNotice;
     private TextView notice;
+    private Feeds.Feed watched; // the feed that played at the last look, while its allowance lasts
+    private long watchedAt;
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
@@ -56,9 +60,15 @@ public class FeedService extends AccessibilityService {
         checkPending = false;
         if (checkPictureInPicture()) return;
         AccessibilityNodeInfo root = getRootInActiveWindow();
-        if (root == null || root.getPackageName() == null) return;
-        Feeds.Feed feed = blockedFeedIn(root);
-        if (feed == null) return;
+        Feeds.Feed feed = root == null ? null : blockedFeedIn(root);
+        if (feed == null) {
+            watched = null;
+            return;
+        }
+        if (!Feeds.usedUp(this, feed)) {
+            watching(feed);
+            return;
+        }
         if (!guard.settled(SystemClock.elapsedRealtime())) {
             scheduleCheck(Feeds.Guard.SETTLE); // look again once the last step settled
             return;
@@ -78,6 +88,10 @@ public class FeedService extends AccessibilityService {
             AccessibilityNodeInfo root = window.getRoot();
             Feeds.Feed feed = root == null ? null : blockedFeedIn(root);
             if (feed == null) continue;
+            if (!Feeds.usedUp(this, feed)) {
+                watching(feed);
+                return true;
+            }
             if (!pipGuard.settled(SystemClock.elapsedRealtime())) {
                 scheduleCheck(Feeds.Guard.SETTLE);
                 return true;
@@ -97,6 +111,20 @@ public class FeedService extends AccessibilityService {
         return false;
     }
 
+    // Allowance left: count the time since the last look and look again in a second, so the block comes on time
+    // even when the app sends no events. A dark screen counts nothing.
+    private void watching(Feeds.Feed feed) {
+        long now = SystemClock.elapsedRealtime();
+        if (!getSystemService(PowerManager.class).isInteractive()) {
+            watched = null;
+            return;
+        }
+        if (watched == feed) Feeds.addUsed(this, feed, Math.min(now - watchedAt, MAX_GAP));
+        watched = feed;
+        watchedAt = now;
+        scheduleCheck(TICK);
+    }
+
     private Feeds.Feed blockedFeedIn(AccessibilityNodeInfo root) {
         if (root.getPackageName() == null) return null;
         Feeds.Feed feed = Feeds.forPackage(root.getPackageName().toString());
@@ -107,8 +135,11 @@ public class FeedService extends AccessibilityService {
         long now = SystemClock.elapsedRealtime();
         if (now - lastNotice > 4_000) {
             lastNotice = now;
-            showNotice("Du hast " + feed.label + " gesperrt, du Hund!");
+            int minutes = Feeds.allowedMinutes(this, feed);
+            showNotice(minutes == 0 ? "Du hast " + feed.label + " gesperrt, du Hund!"
+                    : Limits.duration(minutes) + " " + feed.label + " für heute sind um.");
         }
+        watched = null;
         scheduleCheck(Feeds.Guard.SETTLE); // did it leave the feed?
     }
 
