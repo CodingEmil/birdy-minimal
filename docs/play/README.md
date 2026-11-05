@@ -99,6 +99,17 @@ Kategorie: **Personalisierung**. Kontakt-E-Mail (Pflicht, wird öffentlich angez
 2. **Gilt für dich die Testpflicht?** Private Entwicklerkonten, die nach dem 13. November 2023 erstellt wurden, müssen vor der Produktion einen geschlossenen Test mit mindestens 12 Testern über 14 Tage am Stück durchführen, und zwar pro App. Ob das für dein Konto gilt, zeigt das Dashboard der App („Für die Produktion bewerben“ bzw. „Produktionszugriff beantragen“). Ältere Konten und Organisationskonten sind ausgenommen.
 3. Danach **Produktion → Neuen Release erstellen** → dasselbe Bundle übernehmen → Länder wählen → zur Prüfung senden. Die erste Prüfung dauert meist einige Tage, mit Bedienungshilfe eher länger.
 
+## Automatische Uploads aus GitHub (einmal einrichten)
+
+Danach lädt die CI selbst hoch: jeder Push auf `main` geht in den **internen Test**, jedes Tag `v…` in den **geschlossenen Test „Alpha“**. Versionshinweise kommen aus `distribution/whatsnew/whatsnew-de-DE` (max. 500 Zeichen, vor einem Tag kurz anpassen). Solange das Secret fehlt, überspringt die CI diesen Schritt.
+
+1. **API einschalten:** [console.cloud.google.com](https://console.cloud.google.com) → oben ein Projekt wählen oder neu anlegen (z. B. „birdy“) → „APIs & Dienste“ → „Bibliothek“ → **Google Play Android Developer API** → „Aktivieren“.
+2. **Dienstkonto anlegen:** „IAM & Verwaltung“ → „Dienstkonten“ → „Dienstkonto erstellen“, Name z. B. `birdy-ci`, keine Rollen nötig → „Fertig“. Das Konto anklicken → „Schlüssel“ → „Schlüssel hinzufügen“ → „Neuen Schlüssel erstellen“ → **JSON**. Die Datei wird heruntergeladen; gut aufbewahren, sie ist ein Passwort.
+3. **In der Play Console freigeben:** Startseite der Play Console (nicht in der App) → **„Nutzer und Berechtigungen“** → „Neue Nutzer einladen“ → die E-Mail des Dienstkontos eintragen (`birdy-ci@….iam.gserviceaccount.com`, steht in der JSON-Datei bei `client_email`) → unter „App-Berechtigungen“ **birdy.minimal** hinzufügen und mindestens „App-Informationen ansehen“ sowie „Releases für Test-Tracks verwalten“ erlauben → „Nutzer einladen“.
+4. **Secret in GitHub:** Repo → Settings → Secrets and variables → Actions → „New repository secret“, Name **`PLAY_SERVICE_ACCOUNT_JSON`**, Wert: der komplette Inhalt der JSON-Datei.
+
+Bis neue Berechtigungen bei Google greifen, kann es bis zu einem Tag dauern. Schlägt der erste automatische Upload mit „permission“ fehl, später einfach den Lauf neu starten.
+
 ## Später: Updates
 
-Jeder Build auf GitHub erhöht die Versionsnummer automatisch (`versionCode` = Nummer des CI-Laufs). Für ein Update: Tag setzen, `birdy.aab` aus dem Lauf laden, in der Console einen neuen Release anlegen. Das lässt sich später auch automatisieren (Upload per Play Developer API aus der CI).
+Jeder Build auf GitHub erhöht die Versionsnummer automatisch (`versionCode` = Nummer des CI-Laufs). Mit automatischen Uploads (oben) reicht ein Push bzw. ein Tag; ohne: `birdy.aab` aus dem Lauf laden und in der Console einen neuen Release anlegen.
