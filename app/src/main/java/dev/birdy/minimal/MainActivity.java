@@ -67,6 +67,7 @@ import java.util.function.Consumer;
 
 public class MainActivity extends Activity {
     static final String LOWERCASE = "lowercase"; // app and group names in small letters only
+    static final String HIDE_STATUS_BAR = "hideStatusBar"; // home without clock and icons at the top; on by default
     static final String PREFS = "birdy"; // shared with the settings pages, which edit the keys "top", "newest", "type", "bottom", "shade" and more
     private static final int MAX_FAVORITES = 7; // apps and groups together
     private static final int TOP_COUNT = 5;
@@ -79,6 +80,7 @@ public class MainActivity extends Activity {
     private final Map<String, App> apps = new HashMap<>(); // by flattened ComponentName
     private final List<String> favorites = new ArrayList<>(); // app keys and "group:<id>" entries, in home order
     private Groups groups;
+    boolean statusBarHidden; // visible to tests
     private boolean lowercase; // app and group names in small letters (setting "Namen kleingeschrieben")
     private String openGroup; // id of the group unfolded on the home screen, or null
     private View openFirst, openLast; // its header and last row, to scroll them into view
@@ -123,6 +125,7 @@ public class MainActivity extends Activity {
     // Held in a field: SharedPreferences only keeps a weak reference to listeners.
     private final SharedPreferences.OnSharedPreferenceChangeListener settingsChanged = (p, key) -> {
         if ("top".equals(key) || "newest".equals(key) || LOWERCASE.equals(key)) load();
+        else if (HIDE_STATUS_BAR.equals(key)) applyStatusBar();
         else if ("bottom".equals(key) || "contacts".equals(key) || "web".equals(key)) applySearch(true);
     };
 
@@ -130,9 +133,9 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         setContentView(R.layout.main);
-        hideStatusBar();
         launcherApps = getSystemService(LauncherApps.class);
         prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
+        applyStatusBar();
         collator = Collator.getInstance(); // locale-aware, so Ä/Ö/Ü sort next to A/O/U
         String saved = prefs.getString("favorites", "");
         if (!saved.isEmpty()) favorites.addAll(Arrays.asList(saved.split("\n")));
@@ -341,17 +344,24 @@ public class MainActivity extends Activity {
         cancel.recycle();
     }
 
-    // Home stays empty at the top: no clock, no icons. A swipe from the top edge shows the bar for a moment, over the screen.
+    // Home stays empty at the top: no clock, no icons. A swipe from the top edge shows the bar for a moment, over the
+    // screen. Setting "Statusleiste ausblenden" (on by default); off, the bar stays like in any app.
     @SuppressWarnings("deprecation")
-    private void hideStatusBar() {
+    private void applyStatusBar() {
+        statusBarHidden = prefs.getBoolean(HIDE_STATUS_BAR, true);
         if (Build.VERSION.SDK_INT >= 30) {
             WindowInsetsController bars = getWindow().getInsetsController();
             if (bars == null) return;
-            bars.hide(WindowInsets.Type.statusBars());
-            bars.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            if (statusBarHidden) {
+                bars.hide(WindowInsets.Type.statusBars());
+                bars.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+            } else {
+                bars.show(WindowInsets.Type.statusBars());
+                bars.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_DEFAULT);
+            }
         } else {
-            getWindow().getDecorView().setSystemUiVisibility(
-                    View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+            getWindow().getDecorView().setSystemUiVisibility(statusBarHidden
+                    ? View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY : 0);
         }
     }
 
@@ -359,7 +369,7 @@ public class MainActivity extends Activity {
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
-        if (hasFocus) hideStatusBar();
+        if (hasFocus && statusBarHidden) applyStatusBar();
     }
 
     // Not public API, but what launchers use; needs EXPAND_STATUS_BAR, which is granted at install without a prompt.

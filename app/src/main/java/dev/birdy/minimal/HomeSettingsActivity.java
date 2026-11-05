@@ -14,7 +14,7 @@ import android.widget.Toast;
 
 import java.io.IOException;
 
-// "Startbildschirm": the temperature next to the date, names in small letters, a black wallpaper, and swiping down
+// "Startbildschirm": the status bar, the temperature next to the date, names in small letters, a black wallpaper, and swiping down
 // for notifications.
 public class HomeSettingsActivity extends Activity {
     private static final int WEATHER = 2;
@@ -28,6 +28,7 @@ public class HomeSettingsActivity extends Activity {
         setContentView(R.layout.settings_home);
         SharedPreferences prefs = getSharedPreferences(MainActivity.PREFS, MODE_PRIVATE);
         SetupActivity.bindSwitch(this, R.id.shade, "shade", true);
+        SetupActivity.bindSwitch(this, R.id.hide_status_bar, MainActivity.HIDE_STATUS_BAR, true);
         SetupActivity.bindSwitch(this, R.id.lowercase, MainActivity.LOWERCASE, false);
         bindWeatherSwitch(prefs);
         findViewById(R.id.black_wallpaper).setOnClickListener(v -> new AlertDialog.Builder(this)

@@ -5,7 +5,7 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 ## Unveröffentlicht
 
 ### Neu
-- **Namen kleingeschrieben:** App- und Gruppennamen auf Wunsch nur in Kleinbuchstaben. Einstellung in der Birdy-App unter „Startbildschirm“.
+- **Startbildschirm nach Wunsch:** App- und Gruppennamen nur in Kleinbuchstaben, und die Statusleiste lässt sich wieder einblenden. Einstellungen in der Birdy-App unter „Startbildschirm“.
 
 ## 1.5-beta.1
 

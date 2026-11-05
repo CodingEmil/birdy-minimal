@@ -46,6 +46,16 @@
             android:text="Birdy liest die Temperatur aus dem Widget deiner Wetter-App, ohne Internet und ohne Standort. Antippen öffnet die Wetter-App." />
 
         <Switch
+            android:id="@+id/hide_status_bar"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Statusleiste ausblenden" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Uhrzeit, Akku und Symbole oben bleiben auf dem Startscreen verborgen. Vom oberen Rand wischen zeigt sie kurz." />
+
+        <Switch
             android:id="@+id/lowercase"
             style="@style/Birdy.Line"
             android:minHeight="48dp"

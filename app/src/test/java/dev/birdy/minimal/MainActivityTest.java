@@ -448,6 +448,28 @@ public class MainActivityTest {
     }
 
     @Test
+    public void theStatusBarIsHiddenUnlessSwitchedOff() throws Exception {
+        installApps(LABELS);
+        MainActivity a = start().get();
+        assertTrue("hidden by default", a.statusBarHidden);
+        assertFalse(statusBarVisible(a));
+        prefs.edit().putBoolean(MainActivity.HIDE_STATUS_BAR, false).commit();
+        idle();
+        assertFalse("switched off in the settings: shows at once", a.statusBarHidden);
+        assertTrue(statusBarVisible(a));
+        a.onWindowFocusChanged(true);
+        assertTrue("focus does not hide it again", statusBarVisible(a));
+        prefs.edit().putBoolean(MainActivity.HIDE_STATUS_BAR, true).commit();
+        idle();
+        assertFalse(statusBarVisible(a));
+    }
+
+    private static boolean statusBarVisible(MainActivity a) {
+        android.view.WindowInsets insets = a.getWindow().getDecorView().getRootWindowInsets();
+        return insets == null || insets.isVisible(android.view.WindowInsets.Type.statusBars());
+    }
+
+    @Test
     public void namesCanBeShownInSmallLettersOnly() throws Exception {
         prefs.edit().putString("groups", "1\tMusik\t" + key("Spotify"))
                 .putString("favorites", "group:1\n" + key("WhatsApp")).commit();
