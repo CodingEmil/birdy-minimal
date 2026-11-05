@@ -51,8 +51,9 @@ final class Feeds {
         return context.getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE).getBoolean(feed.pref, false);
     }
 
-    // Minutes a day the feed may play before Birdy leaves it; 0 leaves it right away.
-    static final int[] ALLOWANCES = {0, 15, 30, 60, 180};
+    // Minutes a day the feed may play before Birdy leaves it; 0 leaves it right away. Any other time can be typed in.
+    static final int[] ALLOWANCES = {0, 15, 30, 60};
+    static final int MAX_MINUTES = 24 * 60;
     static final long MINUTE = 60_000;
     private static final String USED = "feeds_used"; // own file: written every second while a feed plays
 

@@ -9,4 +9,6 @@
     <item name="arrange_done" type="id" />
     <!-- Item list in the "Neu in Birdy" popup (built in code). -->
     <item name="whatsnew_list" type="id" />
+    <!-- Minutes field of "Eigene Zeit…" for Shorts & Reels (built in code). -->
+    <item name="allow_minutes" type="id" />
 </resources>
