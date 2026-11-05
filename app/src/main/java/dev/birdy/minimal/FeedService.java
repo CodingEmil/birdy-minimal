@@ -27,6 +27,8 @@ import java.util.List;
 // (res/xml/feed_service.xml). It looks only for the view ids of their short-video players, nothing else, and
 // when a blocked one fills the screen it counts the time against the day's allowance. Once that is spent it presses
 // Back and then Home; a blocked feed in a picture-in-picture window is dragged onto the close target.
+// While the player is open with time left, the bar at the top counts that time down: drawn by strict mode's service,
+// which weighs it against the app's session (BlockService.updateBar), or here when strict mode is off.
 // Strict mode's service stays as it was: it never reads window content.
 public class FeedService extends AccessibilityService {
     static final long THROTTLE = 250, BACK_MS = 200, NOTICE_MS = 3_000;
@@ -40,6 +42,7 @@ public class FeedService extends AccessibilityService {
     private TextView notice;
     private Feeds.Feed watched; // the feed that played at the last look, while its allowance lasts
     private long watchedAt;
+    final SessionBar.Overlay bar = new SessionBar.Overlay(this); // only while strict mode is off
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
@@ -63,10 +66,11 @@ public class FeedService extends AccessibilityService {
         Feeds.Feed feed = root == null ? null : blockedFeedIn(root);
         if (feed == null) {
             watched = null;
+            play(null);
             return;
         }
         if (!Feeds.usedUp(this, feed)) {
-            watching(feed);
+            watching(feed, true);
             return;
         }
         if (!guard.settled(SystemClock.elapsedRealtime())) {
@@ -89,7 +93,7 @@ public class FeedService extends AccessibilityService {
             Feeds.Feed feed = root == null ? null : blockedFeedIn(root);
             if (feed == null) continue;
             if (!Feeds.usedUp(this, feed)) {
-                watching(feed);
+                watching(feed, false);
                 return true;
             }
             if (!pipGuard.settled(SystemClock.elapsedRealtime())) {
@@ -112,17 +116,30 @@ public class FeedService extends AccessibilityService {
     }
 
     // Allowance left: count the time since the last look and look again in a second, so the block comes on time
-    // even when the app sends no events. A dark screen counts nothing.
-    private void watching(Feeds.Feed feed) {
+    // even when the app sends no events. A dark screen counts nothing. The bar shows the time left only for the
+    // full-screen player, not for a small picture-in-picture window over another app.
+    private void watching(Feeds.Feed feed, boolean fullScreen) {
         long now = SystemClock.elapsedRealtime();
         if (!getSystemService(PowerManager.class).isInteractive()) {
             watched = null;
+            play(null);
             return;
         }
         if (watched == feed) Feeds.addUsed(this, feed, Math.min(now - watchedAt, MAX_GAP));
         watched = feed;
         watchedAt = now;
+        play(fullScreen ? Feeds.Playing.of(feed, Feeds.allowedMinutes(this, feed) * Feeds.MINUTE,
+                Feeds.usedTodayMs(this, feed), Usage.now()) : null);
         scheduleCheck(TICK);
+    }
+
+    // Tells strict mode's service which feed plays (it draws the bar then), or draws the feed's bar here without it.
+    void play(Feeds.Playing playing) {
+        if (playing == null && Feeds.playing == null && bar.view == null) return;
+        Feeds.playing = playing;
+        BlockService block = BlockService.running;
+        if (block != null) block.updateBar();
+        bar.show(block == null && playing != null ? playing.timer() : null);
     }
 
     private Feeds.Feed blockedFeedIn(AccessibilityNodeInfo root) {
@@ -140,6 +157,7 @@ public class FeedService extends AccessibilityService {
                     : Limits.duration(minutes) + " " + feed.label + " für heute sind um.");
         }
         watched = null;
+        play(null);
         scheduleCheck(Feeds.Guard.SETTLE); // did it leave the feed?
     }
 
@@ -204,6 +222,7 @@ public class FeedService extends AccessibilityService {
     public boolean onUnbind(Intent intent) {
         handler.removeCallbacksAndMessages(null);
         removeNotice();
+        play(null);
         return super.onUnbind(intent);
     }
 }

@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -65,6 +66,8 @@ public class TimeLimitTest {
         app = RuntimeEnvironment.getApplication();
         prefs = app.getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE);
         prefs.edit().clear().commit();
+        Feeds.playing = null;
+        BlockService.running = null;
         install(INSTA, "Insta", true);
         install(TUBE, "Tube", true);
         install(KEYBOARD, "Tastatur", false);
@@ -776,27 +779,27 @@ public class TimeLimitTest {
         limits(INSTA + "\t0\t\t\t1\t0");
         Usage.startSession(app, Usage.load(app).get(INSTA), 10);
         front(INSTA);
-        assertNotNull("shows in the app", service.bar);
+        assertNotNull("shows in the app", service.bar.view);
     }
 
     @Test
     public void sessionBarGoesWithTheAppAndComesBack() {
         inSession();
         front(TUBE);
-        assertNull("another app", service.bar);
+        assertNull("another app", service.bar.view);
         front(INSTA);
-        assertNotNull(service.bar);
+        assertNotNull(service.bar.view);
         front(app.getPackageName());
-        assertNull("home", service.bar);
+        assertNull("home", service.bar.view);
         front(INSTA);
-        assertNotNull(service.bar);
+        assertNotNull(service.bar.view);
     }
 
     @Test
     public void sessionBarDoesNotRemoveItself() {
         inSession();
         windowEvent(app.getPackageName(), android.view.View.class.getName(), 0);
-        assertNotNull(service.bar);
+        assertNotNull(service.bar.view);
     }
 
     @Test
@@ -804,20 +807,20 @@ public class TimeLimitTest {
         inSession();
         front(app.getPackageName());
         windowEvent(INSTA, "android.widget.FrameLayout", AccessibilityEvent.CONTENT_CHANGE_TYPE_PANE_DISAPPEARED);
-        assertNull("YouTube sends this after Home", service.bar);
+        assertNull("YouTube sends this after Home", service.bar.view);
     }
 
     @Test
     public void sessionBarHidesUnderTheShadeButNotForTheVolumePanel() {
         inSession();
         windowEvent("com.android.systemui", "com.android.systemui.volume.VolumeDialogImpl$CustomDialog", 0);
-        assertNotNull("the app does not report back after the volume panel", service.bar);
+        assertNotNull("the app does not report back after the volume panel", service.bar.view);
         windowEvent("com.android.systemui", "android.widget.FrameLayout", 0);
-        assertNull("the shade", service.bar);
+        assertNull("the shade", service.bar.view);
         windowEvent("com.android.systemui", "android.widget.FrameLayout", AccessibilityEvent.CONTENT_CHANGE_TYPE_PANE_DISAPPEARED);
-        assertNull("a closing pane does not bring it back", service.bar);
+        assertNull("a closing pane does not bring it back", service.bar.view);
         front(INSTA);
-        assertNotNull("the app has focus again", service.bar);
+        assertNotNull("the app has focus again", service.bar.view);
     }
 
     @Test
@@ -825,16 +828,16 @@ public class TimeLimitTest {
         inSession();
         android.provider.Settings.Secure.putString(app.getContentResolver(), android.provider.Settings.Secure.DEFAULT_INPUT_METHOD, KEYBOARD + "/.Ime");
         front(KEYBOARD);
-        assertNotNull(service.bar);
+        assertNotNull(service.bar.view);
         front("com.google.android.apps.nexuslauncher");
-        assertNull(service.bar);
+        assertNull(service.bar.view);
     }
 
     @Test
     public void sessionBarEndsWithTheSession() {
         inSession();
         idle(Duration.ofMinutes(11));
-        assertNull(service.bar);
+        assertNull(service.bar.view);
     }
 
     @Test
@@ -843,7 +846,133 @@ public class TimeLimitTest {
         front(TUBE);
         limits(INSTA + "\t60\t\t\t0\t0"); // asking switched off while the session still runs
         front(INSTA);
-        assertNull(service.bar);
+        assertNull(service.bar.view);
+    }
+
+    // --- In Shorts or Reels: whichever timer runs out first ---
+
+    private static final String YOUTUBE = Feeds.YOUTUBE;
+
+    // A 10-minute session in YouTube, started at 14:00.
+    private void inYouTubeSession() {
+        install(YOUTUBE, "YouTube", true);
+        now(14, 0);
+        limits(YOUTUBE + "\t0\t\t\t1\t0");
+        Usage.startSession(app, Usage.load(app).get(YOUTUBE), 10);
+        front(YOUTUBE);
+        near("the session", at(14, 10), service.bar.view.end);
+    }
+
+    // The clock moves on with the looper: a feed's timer, taken from it, is off by a few milliseconds.
+    private static void near(String what, long expected, long actual) {
+        assertTrue(what + ": " + actual + " is not about " + expected, Math.abs(actual - expected) < 1_000);
+    }
+
+    private static void near(long expected, long actual) { near("", expected, actual); }
+
+    // FeedService saw the Shorts player with this much of today's allowance left.
+    private void shortsPlay(int allowedMinutes, int leftMinutes) {
+        Feeds.playing = Feeds.Playing.of(Feeds.Feed.SHORTS, allowedMinutes * Limits.MINUTE,
+                (allowedMinutes - leftMinutes) * Limits.MINUTE, Usage.now());
+        service.updateBar();
+    }
+
+    private void shortsClose() {
+        Feeds.playing = null;
+        service.updateBar();
+    }
+
+    @Test
+    public void inShortsTheShorterTimerShowsAndTheSessionComesBackOutside() {
+        inYouTubeSession();
+        shortsPlay(15, 3);
+        near("3 min of Shorts left, before the session ends", at(14, 3), service.bar.view.end);
+        near("drains the whole allowance", at(14, 3) - 15 * Limits.MINUTE, service.bar.view.start);
+        shortsClose();
+        near("YouTube's home: the session again", at(14, 10), service.bar.view.end);
+        shortsPlay(15, 3);
+        near("back in Shorts", at(14, 3), service.bar.view.end);
+    }
+
+    @Test
+    public void inShortsTheSessionStaysWhenItEndsFirst() {
+        inYouTubeSession();
+        SessionBar before = service.bar.view;
+        shortsPlay(30, 20);
+        near(at(14, 10), service.bar.view.end);
+        assertSame("the same bar, no flicker", before, service.bar.view);
+    }
+
+    @Test
+    public void inShortsWithoutASessionTheShortsTimerShows() {
+        install(YOUTUBE, "YouTube", true);
+        now(14, 0);
+        front(YOUTUBE);
+        assertNull(service.bar.view);
+        shortsPlay(15, 5);
+        near(at(14, 5), service.bar.view.end);
+        shortsClose();
+        assertNull(service.bar.view);
+    }
+
+    @Test
+    public void aFeedTimerCountingOnKeepsItsBar() {
+        inYouTubeSession();
+        shortsPlay(15, 3);
+        SessionBar bar = service.bar.view;
+        idle(Duration.ofSeconds(1)); // FeedService counted a second: the end stays where it was, give or take
+        shortsPlay(15, 3);
+        assertSame(bar, service.bar.view);
+    }
+
+    @Test
+    public void aFeedOnlyCountsInItsOwnApp() {
+        inSession(); // Insta, not Instagram
+        shortsPlay(15, 1);
+        near(at(14, 10), service.bar.view.end);
+    }
+
+    @Test
+    public void theFeedBarHidesUnderTheShadeLikeTheSession() {
+        install(YOUTUBE, "YouTube", true);
+        now(14, 0);
+        front(YOUTUBE);
+        shortsPlay(15, 5);
+        windowEvent("com.android.systemui", "android.widget.FrameLayout", 0);
+        assertNull(service.bar.view);
+    }
+
+    @Test
+    public void withoutStrictModeTheFeedServiceDrawsTheShortsBarItself() {
+        now(14, 0);
+        FeedService feeds = Robolectric.setupService(FeedService.class);
+        feeds.play(Feeds.Playing.of(Feeds.Feed.SHORTS, 15 * Limits.MINUTE, 10 * Limits.MINUTE, Usage.now()));
+        near(at(14, 5), feeds.bar.view.end);
+        feeds.play(null);
+        assertNull(feeds.bar.view);
+    }
+
+    @Test
+    public void withStrictModeOnlyItsServiceDrawsTheBar() {
+        install(YOUTUBE, "YouTube", true);
+        now(14, 0);
+        front(YOUTUBE);
+        FeedService feeds = Robolectric.setupService(FeedService.class);
+        feeds.play(Feeds.Playing.of(Feeds.Feed.SHORTS, 15 * Limits.MINUTE, 10 * Limits.MINUTE, Usage.now()));
+        assertNull("one bar, not two", feeds.bar.view);
+        near(at(14, 5), service.bar.view.end);
+        feeds.play(null);
+        assertNull("Shorts closed", service.bar.view);
+    }
+
+    @Test
+    public void theTimerThatRunsOutFirstWins() {
+        long[] a = {0, 100}, b = {50, 80};
+        assertSame(b, SessionBar.first(a, b));
+        assertSame(b, SessionBar.first(b, a));
+        assertSame(a, SessionBar.first(a, null));
+        assertSame(b, SessionBar.first(null, b));
+        assertNull(SessionBar.first(null, null));
     }
 
     @Test
@@ -866,7 +995,7 @@ public class TimeLimitTest {
         Usage.startSession(app, Usage.load(app).get(TUBE), 5);
         assertEquals("the old line survives another app's session", end, Usage.session(app, INSTA)[0]);
         front(INSTA);
-        assertNull("no start known: no bar, but still inside the session", service.bar);
+        assertNull("no start known: no bar, but still inside the session", service.bar.view);
         assertNull(started(SessionActivity.class));
     }
 }

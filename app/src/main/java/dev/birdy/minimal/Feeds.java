@@ -83,6 +83,35 @@ final class Feeds {
         return blocked(context, feed) && usedTodayMs(context, feed) >= allowedMinutes(context, feed) * MINUTE;
     }
 
+    // The feed whose player fills the screen right now with some of today's allowance left, as a timer for the bar:
+    // the allowance, ending when it would be spent if the feed keeps playing. Wall clock, like the session.
+    // Set by FeedService, read by BlockService: both run in Birdy's process, on its main thread. null while none plays.
+    static final class Playing {
+        final Feed feed;
+        final long start, end;
+
+        Playing(Feed feed, long start, long end) {
+            this.feed = feed;
+            this.start = start;
+            this.end = end;
+        }
+
+        static Playing of(Feed feed, long allowedMs, long usedMs, long now) {
+            long end = now + Math.max(0, allowedMs - usedMs);
+            return new Playing(feed, end - allowedMs, end);
+        }
+
+        long[] timer() { return new long[] {start, end}; }
+    }
+
+    static Playing playing;
+
+    // The feed's timer while its player is open in pkg, else null.
+    static long[] playingIn(String pkg) {
+        Playing p = playing;
+        return p != null && p.feed.pkg.equals(pkg) ? p.timer() : null;
+    }
+
     static String allowanceLabel(int minutes) {
         return minutes == 0 ? "sofort gesperrt" : Limits.duration(minutes);
     }

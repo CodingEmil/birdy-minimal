@@ -4,6 +4,9 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 
 ## Unveröffentlicht
 
+### Verbessert
+- **Restzeit in Shorts und Reels:** Die dünne Leiste oben zeigt jetzt auch die Shorts- bzw. Reels-Zeit für heute. Im Player läuft die Zeit, die zuerst um ist, sonst die der App.
+
 ## 1.4
 
 ### Wichtig

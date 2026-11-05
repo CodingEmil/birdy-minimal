@@ -7,13 +7,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.graphics.PixelFormat;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
-import android.view.Gravity;
 import android.view.View;
-import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 
 import java.util.HashMap;
@@ -28,7 +25,6 @@ public class BlockService extends AccessibilityService {
     static final long MAX_WAIT = 60_000L; // re-check at least every minute: usage keeps counting, clocks drift
     static final long SETTLE = 600L; // after Recents or the shade closed: time for the app's activity to resume
     static final long COVER_HOLD = 3_000L; // longest an app's burst of window changes may follow its cover
-    static final int BAR_DP = 3;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable recheck = this::recheck;
@@ -42,8 +38,9 @@ public class BlockService extends AccessibilityService {
     private String cover;
     private long coverAt;
     private boolean obscured; // Recents, the shade or a system dialog lies over the app in front
-    SessionBar bar; // visible to tests
-    private long barEnd;
+    final SessionBar.Overlay bar = new SessionBar.Overlay(this); // visible to tests
+    // The service while strict mode is on, so FeedService can tell it when a Shorts or Reels player opens or closes.
+    static BlockService running;
     private final BroadcastReceiver screen = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) { updateBar(); }
     };
@@ -108,28 +105,18 @@ public class BlockService extends AccessibilityService {
         return known;
     }
 
-    // The session bar shows only over the app whose session runs, and not over the lock screen or anything above the
-    // app: an accessibility overlay would draw on top of those too. Not a touch target, touches go through to the app.
-    private void updateBar() {
-        Limits.AppLimit limit = current == null || obscured ? null : Usage.load(this).get(current);
-        long[] session = limit != null && limit.ask ? Usage.session(this, current) : null;
-        boolean show = session != null && session[2] > 0 && Usage.now() < session[0]
-                && !getSystemService(KeyguardManager.class).isKeyguardLocked();
-        if (bar != null && (!show || barEnd != session[0])) {
-            getSystemService(WindowManager.class).removeView(bar);
-            bar = null;
+    // The bar shows only over the app whose session runs, and not over the lock screen or anything above the app: an
+    // accessibility overlay would draw on top of those too. While Shorts or Reels play in that app with time left
+    // today, it shows whichever runs out first, the session or the feed; back outside the player, the session again.
+    void updateBar() {
+        long[] timer = null;
+        if (current != null && !obscured && !getSystemService(KeyguardManager.class).isKeyguardLocked()) {
+            Limits.AppLimit limit = Usage.load(this).get(current);
+            long[] session = limit != null && limit.ask ? Usage.session(this, current) : null;
+            if (session != null && session[2] > 0 && Usage.now() < session[0]) timer = new long[] {session[2], session[0]};
+            timer = SessionBar.first(timer, Feeds.playingIn(current));
         }
-        if (!show || bar != null) return;
-        bar = new SessionBar(this, session[2], session[0]);
-        barEnd = session[0];
-        // No FLAG_LAYOUT_IN_SCREEN: the window stays below the status bar, and at the very top once an app hides it.
-        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT, Math.round(BAR_DP * getResources().getDisplayMetrics().density),
-                WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-                PixelFormat.OPAQUE);
-        params.gravity = Gravity.TOP;
-        getSystemService(WindowManager.class).addView(bar, params);
+        bar.show(timer);
     }
 
     void recheck() {
@@ -160,6 +147,7 @@ public class BlockService extends AccessibilityService {
     @Override
     public void onCreate() {
         super.onCreate();
+        running = this;
         IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_USER_PRESENT);
@@ -169,6 +157,7 @@ public class BlockService extends AccessibilityService {
     @Override
     public void onDestroy() {
         unregisterReceiver(screen);
+        if (running == this) running = null;
         super.onDestroy();
     }
 
@@ -178,6 +167,7 @@ public class BlockService extends AccessibilityService {
         handler.removeCallbacks(settle);
         current = null;
         updateBar();
+        if (running == this) running = null;
         return super.onUnbind(intent);
     }
 }
