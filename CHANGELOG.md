@@ -4,6 +4,9 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 
 ## Unveröffentlicht
 
+### Neu
+- **Startbildschirm ohne Statusleiste:** Oben ist es jetzt ganz schwarz, ohne Uhrzeit und Symbole. Von der oberen Kante nach unten wischen zeigt die Leiste kurz an.
+
 ## 1.4-beta.4
 
 ### Neu
