@@ -15,6 +15,11 @@
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
 
+    <!-- Hosts the weather app's widget for the temperature; the user allows it once in a system dialog. -->
+    <uses-permission
+        android:name="android.permission.BIND_APPWIDGET"
+        tools:ignore="ProtectedPermissions" />
+
     <!-- Android 11+ package visibility: every app with a launcher entry, plus other home apps
          so SetupActivity can tell whether Birdy is the default. -->
     <queries>
@@ -26,6 +31,8 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.HOME" />
         </intent>
+        <!-- Samsung Weather: holds the weather widget and may have no launcher entry. -->
+        <package android:name="com.sec.android.daemonapp" />
         <!-- Web search from the drawer: Chrome if present, otherwise any browser. -->
         <package android:name="com.android.chrome" />
         <intent>

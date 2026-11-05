@@ -114,6 +114,17 @@
             android:text="Treffer stehen beim Suchen unten über dem Suchfeld, der beste ganz unten. So erreichst du sie gut mit dem Daumen." />
 
         <Switch
+            android:id="@+id/weather"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Temperatur neben dem Datum" />
+
+        <TextView
+            android:id="@+id/weather_hint"
+            style="@style/Birdy.Hint"
+            android:text="Birdy liest die Temperatur aus dem Widget deiner Wetter-App, ohne Internet und ohne Standort. Antippen öffnet die Wetter-App." />
+
+        <Switch
             android:id="@+id/contacts"
             style="@style/Birdy.Line"
             android:minHeight="48dp"

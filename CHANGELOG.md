@@ -4,6 +4,9 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 
 ## Unveröffentlicht
 
+### Neu
+- **Temperatur neben dem Datum:** Birdy zeigt die aktuelle Temperatur aus Pixel Weather, Antippen öffnet die App. Einschalten in der Birdy-App; Samsung Wetter ist eingebaut, aber noch ungetestet.
+
 ### Verbessert
 - **Shorts und Reels führen zum Startbildschirm:** Öffnest du gesperrte Shorts oder Reels, landest du jetzt immer auf dem Startbildschirm und Birdy sagt dir deutlich, warum.
 

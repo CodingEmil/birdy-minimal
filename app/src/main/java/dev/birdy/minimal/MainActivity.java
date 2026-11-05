@@ -106,6 +106,7 @@ public class MainActivity extends Activity {
     private boolean dragging, listAtTop, shadePulled, homeCanScrollUp, homeCanScrollDown;
     private int touchSlop;
     private float dragDistance, flingVelocity, density;
+    private Weather weather;
 
     private final LauncherApps.Callback packagesChanged = new LauncherApps.Callback() {
         @Override public void onPackageAdded(String pkg, UserHandle user) { load(); }
@@ -145,6 +146,8 @@ public class MainActivity extends Activity {
         String datePattern = DateFormat.getBestDateTimePattern(Locale.getDefault(), "EEEEdMMMM");
         date.setFormat12Hour(datePattern);
         date.setFormat24Hour(datePattern);
+
+        weather = new Weather(this, findViewById(android.R.id.content), findViewById(R.id.temperature));
 
         home = findViewById(R.id.home);
         drawer = findViewById(R.id.drawer);
@@ -230,6 +233,13 @@ public class MainActivity extends Activity {
         else animateTo(false);
     }
 
+    // Picks up the setting from SetupActivity, which only runs while home is stopped.
+    @Override
+    protected void onStart() {
+        super.onStart();
+        weather.start(prefs.getInt(Weather.KEY, Weather.NONE));
+    }
+
     // After an update: what's new (once). Otherwise: limits without the grants they need do nothing; say so once.
     @Override
     protected void onResume() {
@@ -250,6 +260,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onStop() {
         super.onStop();
+        weather.stop();
         if (settle != null) settle.cancel();
         drawerOpen = false;
         hideKeyboard();
