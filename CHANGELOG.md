@@ -5,6 +5,7 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 ## Unveröffentlicht
 
 ### Behoben
+- **Sperre über „Zuletzt verwendet“:** Eine gesperrte App ließ sich manchmal über „Zuletzt verwendet“ oder eine Benachrichtigung trotzdem öffnen. Der strenge Modus fängt sie jetzt auch dort ab.
 - **Shorts im Bild-im-Bild-Fenster:** Auch im kleinen Fenster ließen sich gesperrte Shorts weiterschauen. Jetzt schließt Birdy das Fenster.
 
 ## 1.4-beta.3

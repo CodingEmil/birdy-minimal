@@ -158,6 +158,46 @@ public class TimeLimitTest {
         return next;
     }
 
+    // Opening from Recents: Android may hand over only Recents' own window change, not the app's.
+    private void frontWithoutItsOwnEvent(String pkg) {
+        usage(pkg, Usage.RESUMED, Usage.now());
+        front("com.android.systemui"); // not installed here, so not an app: Recents / the shade
+    }
+
+    @Test
+    public void appFromRecentsDuringThePauseIsCoveredEvenWhenOnlyRecentsReported() {
+        grantUsageAccess();
+        now(14, 0);
+        limits(INSTA + "\t0\t\t\t1\t10");
+        front(INSTA);
+        choose(sessionScreen(started(SessionActivity.class)), "10 min");
+        front(INSTA);
+        idle(Duration.ofMinutes(11)); // session over: covered, pause until 14:20
+        assertEquals("Pause", blocked().getStringExtra(BlockActivity.TITLE));
+        front(app.getPackageName()); // "Zum Startscreen": Birdy in front
+        idle(Duration.ofMinutes(1));
+        shadowOf(app).clearNextStartedActivities();
+
+        frontWithoutItsOwnEvent(INSTA);
+        assertNull("waits for the app to settle", blocked());
+        idle(Duration.ofMillis(BlockService.SETTLE + 50));
+        Intent pause = blocked();
+        assertNotNull("Recents does not get around the pause", pause);
+        assertEquals("Pause", pause.getStringExtra(BlockActivity.TITLE));
+    }
+
+    @Test
+    public void withoutUsageAccessOnlyTheAppsOwnEventCounts() {
+        now(14, 0);
+        limits(INSTA + "\t0\t\t\t1\t10");
+        usage(INSTA, Usage.RESUMED, Usage.now());
+        front("com.android.systemui");
+        idle(Duration.ofSeconds(1));
+        assertNull(started(SessionActivity.class));
+        front(INSTA);
+        assertNotNull(started(SessionActivity.class));
+    }
+
     @Test
     public void usedUpDailyLimitBlocksAsSoonAsTheAppComesToFront() {
         grantUsageAccess();

@@ -92,6 +92,24 @@ final class Usage {
         return foregroundMs(events, pkg, from, now);
     }
 
+    // Package of the activity that resumed last within the past window ms, or null (also without usage access).
+    static String lastResumed(Context context, long window) {
+        if (!hasUsageAccess(context)) return null;
+        long now = now();
+        UsageEvents raw = context.getSystemService(UsageStatsManager.class).queryEvents(now - window, now + 1);
+        String pkg = null;
+        long latest = Long.MIN_VALUE;
+        while (raw != null && raw.hasNextEvent()) {
+            UsageEvents.Event e = new UsageEvents.Event();
+            raw.getNextEvent(e);
+            if (e.getEventType() == RESUMED && e.getTimeStamp() >= latest) {
+                latest = e.getTimeStamp();
+                pkg = e.getPackageName();
+            }
+        }
+        return pkg;
+    }
+
     @SuppressWarnings("deprecation")
     static boolean hasUsageAccess(Context context) {
         AppOpsManager ops = context.getSystemService(AppOpsManager.class);

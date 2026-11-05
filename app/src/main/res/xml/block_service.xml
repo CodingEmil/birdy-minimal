@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Window changes only, no window content: Birdy needs nothing but the package in front. -->
+<!-- Window changes only, no window content: Birdy needs nothing but the package in front.
+     notificationTimeout 0: every change arrives. With a delay, Android hands over only the last change of a burst,
+     and opening an app from Recents or a notification ends with a change of Recents / the shade, so the app's own
+     change got lost and the app slipped through. -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeWindowStateChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:canRetrieveWindowContent="false"
     android:description="@string/block_service_description"
     android:isAccessibilityTool="false"
-    android:notificationTimeout="100" />
+    android:notificationTimeout="0" />

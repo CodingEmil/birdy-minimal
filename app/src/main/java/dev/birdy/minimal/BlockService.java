@@ -17,9 +17,11 @@ import java.util.Map;
 // Reads only package names of windows, never their content (see res/xml/block_service.xml).
 public class BlockService extends AccessibilityService {
     static final long MAX_WAIT = 60_000L; // re-check at least every minute: usage keeps counting, clocks drift
+    static final long SETTLE = 600L; // after Recents or the shade closed: time for the app's activity to resume
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable recheck = this::recheck;
+    private final Runnable settle = this::settle;
     private final Map<String, Boolean> isApp = new HashMap<>(); // keyboards and system UI do not change the app in front
     private String current;
 
@@ -27,7 +29,21 @@ public class BlockService extends AccessibilityService {
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || event.getPackageName() == null) return;
         String pkg = event.getPackageName().toString();
-        if (!isApp(pkg)) return;
+        if (!isApp(pkg)) { // Recents, the notification shade, a keyboard: the app behind may have just changed
+            handler.removeCallbacks(settle);
+            handler.postDelayed(settle, SETTLE);
+            return;
+        }
+        handler.removeCallbacks(settle);
+        current = pkg;
+        recheck();
+    }
+
+    // Safety net for an app that came to the front without a window change of its own reaching Birdy (some
+    // launchers' Recents animate the app in): with usage access, Android's usage events say which app resumed last.
+    void settle() {
+        String pkg = Usage.lastResumed(this, SETTLE + 10_000L);
+        if (pkg == null || pkg.equals(current) || !isApp(pkg)) return;
         current = pkg;
         recheck();
     }
@@ -64,6 +80,7 @@ public class BlockService extends AccessibilityService {
     @Override
     public boolean onUnbind(Intent intent) {
         handler.removeCallbacks(recheck);
+        handler.removeCallbacks(settle);
         return super.onUnbind(intent);
     }
 }
