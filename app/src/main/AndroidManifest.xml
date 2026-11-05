@@ -106,5 +106,20 @@
                 android:name="android.accessibilityservice"
                 android:resource="@xml/block_service" />
         </service>
+
+        <!-- Shorts & Reels: leaves the short-video feeds of YouTube and Instagram when blocked
+             (see res/xml/feed_service.xml). Separate from strict mode, which never reads window content. -->
+        <service
+            android:name=".FeedService"
+            android:exported="true"
+            android:label="@string/feed_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/feed_service" />
+        </service>
     </application>
 </manifest>

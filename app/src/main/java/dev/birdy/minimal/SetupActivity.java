@@ -48,6 +48,9 @@ public class SetupActivity extends Activity {
             }
             prefs.edit().putBoolean("contacts", on).apply();
         });
+        bindFeedSwitch(R.id.block_shorts, Feeds.Feed.SHORTS, prefs);
+        bindFeedSwitch(R.id.block_reels, Feeds.Feed.REELS, prefs);
+        findViewById(R.id.feeds_setup).setOnClickListener(v -> Grants.discloseFeeds(this));
         findViewById(R.id.setup_limits).setOnClickListener(v -> startActivity(new Intent(this, LimitsActivity.class)));
         findViewById(R.id.privacy).setOnClickListener(v ->
                 Grants.open(this, new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(Grants.PRIVACY_URL))));
@@ -94,6 +97,24 @@ public class SetupActivity extends Activity {
         view.setOnCheckedChangeListener((v, on) -> prefs.edit().putBoolean(key, on).apply());
     }
 
+    // Turning a feed on without its accessibility service asks for that service right away.
+    private void bindFeedSwitch(int id, Feeds.Feed feed, SharedPreferences prefs) {
+        Switch view = findViewById(id);
+        view.setChecked(Feeds.blocked(this, feed));
+        view.setOnCheckedChangeListener((v, on) -> {
+            prefs.edit().putBoolean(feed.pref, on).apply();
+            renderFeedsSetup();
+            if (on && !Feeds.serviceOn(this)) Grants.discloseFeeds(this);
+        });
+    }
+
+    // "Bedienungshilfe einschalten" shows while a feed is blocked but the service is off.
+    private void renderFeedsSetup() {
+        int visibility = Feeds.anyBlocked(this) && !Feeds.serviceOn(this) ? android.view.View.VISIBLE : android.view.View.GONE;
+        findViewById(R.id.feeds_setup).setVisibility(visibility);
+        findViewById(R.id.feeds_setup_hint).setVisibility(visibility);
+    }
+
     // Re-checked on every return, e.g. after picking Birdy in the settings.
     @Override
     protected void onResume() {
@@ -102,6 +123,7 @@ public class SetupActivity extends Activity {
         status.setText(active ? "Aktiv als Launcher" : "Noch nicht aktiv");
         action.setText(active ? "Launcher wechseln" : "Als Startbildschirm festlegen");
         renderLimitsSummary();
+        renderFeedsSetup();
     }
 
     // One line under "Zeitlimits": how many apps, and whether strict mode is on.

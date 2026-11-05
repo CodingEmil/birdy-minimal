@@ -1,0 +1,112 @@
+package dev.birdy.minimal;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.robolectric.Shadows.shadowOf;
+
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.graphics.Rect;
+import android.widget.Switch;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.Robolectric;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
+import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowAlertDialog;
+
+// Shorts & Reels: recognising the full-screen players, and going Back, then Home if Back does not get out.
+@RunWith(RobolectricTestRunner.class)
+@Config(sdk = 36)
+public class FeedsTest {
+    private SharedPreferences prefs;
+
+    @Before
+    public void setUp() {
+        prefs = RuntimeEnvironment.getApplication().getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE);
+        prefs.edit().clear().commit();
+    }
+
+    // A screen 2400 px high with the given views (full view id → bounds).
+    private static Feeds.Screen screen(Object... idsAndRects) {
+        Map<String, List<Rect>> views = new HashMap<>();
+        for (int i = 0; i < idsAndRects.length; i += 2) {
+            views.computeIfAbsent((String) idsAndRects[i], k -> new ArrayList<>()).add((Rect) idsAndRects[i + 1]);
+        }
+        return new Feeds.Screen() {
+            @Override public int height() { return 2400; }
+            @Override public List<Rect> visible(String id) { return views.getOrDefault(id, new ArrayList<>()); }
+        };
+    }
+
+    @Test
+    public void fullScreenPlayerCountsAPreviewDoesNot() {
+        Rect full = new Rect(0, 0, 1080, 2300), shelf = new Rect(0, 900, 1080, 1500);
+        assertTrue(Feeds.showing(screen("com.google.android.youtube:id/reel_recycler", full), Feeds.Feed.SHORTS));
+        assertFalse("the Shorts shelf on YouTube's home stays",
+                Feeds.showing(screen("com.google.android.youtube:id/reel_recycler", shelf), Feeds.Feed.SHORTS));
+        assertTrue(Feeds.showing(screen("com.instagram.android:id/clips_viewer_view_pager", full), Feeds.Feed.REELS));
+        assertFalse("ids of the other app do not count",
+                Feeds.showing(screen("com.google.android.youtube:id/reel_recycler", full), Feeds.Feed.REELS));
+        assertFalse(Feeds.showing(screen(), Feeds.Feed.SHORTS));
+    }
+
+    @Test
+    public void packagesMapToTheirFeed() {
+        assertEquals(Feeds.Feed.SHORTS, Feeds.forPackage("com.google.android.youtube"));
+        assertEquals(Feeds.Feed.REELS, Feeds.forPackage("com.instagram.android"));
+        assertNull(Feeds.forPackage("com.whatsapp"));
+    }
+
+    @Test
+    public void backFirstThenHomeWhenBackDoesNotLeave() {
+        Feeds.Guard g = new Feeds.Guard();
+        assertEquals(Feeds.Guard.Action.BACK, g.next(10_000));
+        assertEquals("waits for Back to take effect", Feeds.Guard.Action.NONE, g.next(10_300));
+        assertEquals(Feeds.Guard.Action.BACK, g.next(10_800));
+        assertEquals("still there after two Backs", Feeds.Guard.Action.HOME, g.next(11_600));
+        assertEquals("starts over after Home", Feeds.Guard.Action.BACK, g.next(12_400));
+        assertEquals("a later visit starts with Back again", Feeds.Guard.Action.BACK, g.next(30_000));
+    }
+
+    @Test
+    public void switchesAreOffByDefaultAndAskForTheServiceWhenTurnedOn() {
+        SetupActivity a = Robolectric.buildActivity(SetupActivity.class).setup().get();
+        Switch shorts = a.findViewById(R.id.block_shorts);
+        assertFalse(shorts.isChecked());
+        assertFalse(Feeds.blocked(a, Feeds.Feed.SHORTS));
+        shorts.setChecked(true);
+        assertTrue(Feeds.blocked(a, Feeds.Feed.SHORTS));
+        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestAlertDialog();
+        assertEquals("Shorts & Reels nutzt eine Bedienungshilfe", shadowOf(d).getTitle().toString());
+        assertEquals(android.view.View.VISIBLE, a.findViewById(R.id.feeds_setup).getVisibility());
+        d.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        shadowOf(android.os.Looper.getMainLooper()).idle();
+        assertEquals(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS, shadowOf(a).getNextStartedActivity().getAction());
+        assertFalse("Reels stay as they were", Feeds.blocked(a, Feeds.Feed.REELS));
+    }
+
+    @Test
+    public void withTheServiceOnThereIsNothingToSetUp() {
+        android.provider.Settings.Secure.putString(RuntimeEnvironment.getApplication().getContentResolver(),
+                android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                new android.content.ComponentName(RuntimeEnvironment.getApplication(), FeedService.class).flattenToString());
+        prefs.edit().putBoolean("blockReels", true).commit();
+        SetupActivity a = Robolectric.buildActivity(SetupActivity.class).setup().get();
+        assertTrue(((Switch) a.findViewById(R.id.block_reels)).isChecked());
+        assertEquals(android.view.View.GONE, a.findViewById(R.id.feeds_setup).getVisibility());
+        ((Switch) a.findViewById(R.id.block_shorts)).setChecked(true);
+        assertNull("no disclosure needed", ShadowAlertDialog.getLatestAlertDialog());
+    }
+}

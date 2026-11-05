@@ -40,11 +40,15 @@ ZEITLIMITS
 • Bewusst öffnen: Vor dem Öffnen fragt Birdy, wie lange du bleiben willst. Ist die Zeit um, wird die App gesperrt, danach gilt eine Pause, die du selbst festlegst
 • Strenger Modus: Gesperrte Apps werden immer abgefangen, auch über Benachrichtigungen oder „Zuletzt verwendet“
 
+SHORTS & REELS
+• YouTube Shorts und Instagram Reels sperren, die Apps selbst bleiben nutzbar
+
 PRIVAT
 Birdy hat keinen Internetzugriff, keine Werbung, kein Tracking und kein Konto. Alles bleibt auf deinem Gerät.
 
 BEDIENUNGSHILFE
 Für den strengen Modus nutzt Birdy die Android-Bedienungshilfe (AccessibilityService), nur um zu erkennen, welche App gerade im Vordergrund ist. So kann Birdy Apps sperren, deren Limit erreicht ist. Birdy liest keine Bildschirminhalte oder Eingaben und führt keine Aktionen aus. Der strenge Modus ist freiwillig und lässt sich jederzeit ausschalten.
+Zum Sperren von Shorts und Reels gibt es eine zweite, eigene Bedienungshilfe. Sie ist nur in YouTube und Instagram aktiv, prüft dort nur, ob der Shorts- bzw. Reels-Player offen ist, und drückt dann „Zurück“. Texte, Nachrichten und Eingaben liest sie nicht.
 ```
 
 ## English (optional second language)

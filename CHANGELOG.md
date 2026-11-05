@@ -5,6 +5,7 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 ## Unveröffentlicht
 
 ### Neu
+- **YouTube Shorts und Instagram Reels sperren:** In der Birdy-App unter „Shorts & Reels“ einschalten. Öffnest du Shorts oder Reels, geht Birdy sofort zurück; YouTube und Instagram selbst bleiben nutzbar. Braucht die neue Bedienungshilfe „Birdy Shorts & Reels“.
 - **Apps in einer Gruppe anordnen:** Lange auf eine Gruppe drücken → „Apps anordnen“, dann mit ↑ und ↓ verschieben. Ohne eigene Reihenfolge bleibt die Gruppe alphabetisch.
 
 ### Verbessert

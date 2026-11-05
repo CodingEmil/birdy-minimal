@@ -71,6 +71,8 @@ Die Console fragt nach, sobald das Bundle einen AccessibilityService enthält.
 Birdy is a home screen launcher with optional digital wellbeing time limits. Users can set, per app, a daily time limit, morning and evening quiet hours, and a session length chosen before each visit. The optional "strict mode" uses the AccessibilityService only to receive TYPE_WINDOW_STATE_CHANGED events and read the package name of the app that comes to the foreground. When that app is blocked by a limit the user set, Birdy shows its own block screen over it. Without this, blocked apps could be opened from notifications or Recents, bypassing the limits.
 
 Birdy does not retrieve window content (canRetrieveWindowContent=false), does not read text or input, does not perform gestures or actions on other apps, and has no internet permission; nothing is stored or transmitted. Before the user is sent to the accessibility settings, Birdy shows a prominent in-app disclosure explaining this, with "Zustimmen" (agree) and "Ablehnen" (decline). Strict mode is optional; all other features work without it.
+
+A second, separate and optional service "Birdy Shorts & Reels" lets users block the short-video feeds YouTube Shorts and Instagram Reels while keeping both apps usable. It is restricted to the packages com.google.android.youtube and com.instagram.android (android:packageNames). It retrieves window content only to look up the view ids of the full-screen Shorts/Reels player (flagReportViewIds, findAccessibilityNodeInfosByViewId); it does not read text, comments, messages or input. When the blocked player fills the screen, it performs GLOBAL_ACTION_BACK (GLOBAL_ACTION_HOME if Back does not leave it). Nothing is stored or transmitted. It has its own prominent in-app disclosure with "Zustimmen" and "Ablehnen" before the user is sent to the accessibility settings.
 ```
 
 - **Video:** Google verlangt meist ein kurzes Video (YouTube, „nicht gelistet“ reicht). Ablauf, etwa 60 Sekunden, Bildschirmaufnahme am Handy:
@@ -80,6 +82,7 @@ Birdy does not retrieve window content (canRetrieveWindowContent=false), does no
   4. In den Bedienungshilfen „Birdy Zeitlimits“ einschalten.
   5. Zurück zum Startscreen, YouTube über eine Benachrichtigung oder „Zuletzt verwendet“ öffnen → Birdys Sperrseite erscheint.
   6. Kurz zeigen, dass sich der strenge Modus in den Bedienungshilfen wieder ausschalten lässt.
+  7. Für „Birdy Shorts & Reels“: Birdy-App → „YouTube Shorts sperren“ einschalten → **den Hinweis zeigen** → „Zustimmen“ → in den Bedienungshilfen „Birdy Shorts & Reels“ einschalten → YouTube öffnen, auf „Shorts“ tippen → Birdy geht zurück, Hinweis „YouTube Shorts sind gesperrt“.
 
 Weitere Berechtigungen (Nutzungsdatenzugriff, Apps deinstallieren anfragen, Benachrichtigungsleiste öffnen, Hintergrundbild) brauchen keine eigene Deklaration. Fragt die Console doch nach einer, gilt dieselbe Begründung wie in der Datenschutzerklärung.
 

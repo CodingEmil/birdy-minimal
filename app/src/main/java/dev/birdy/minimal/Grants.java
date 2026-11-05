@@ -102,6 +102,22 @@ final class Grants {
                 .show();
     }
 
+    // Same kind of disclosure for "Birdy Shorts & Reels", which (unlike strict mode) looks into two apps' windows.
+    static void discloseFeeds(Activity activity) {
+        new AlertDialog.Builder(activity)
+                .setTitle("Shorts & Reels nutzt eine Bedienungshilfe")
+                .setMessage("Birdy nutzt dafür eine eigene Android-Bedienungshilfe (AccessibilityService) „Birdy Shorts & Reels“. "
+                        + "Sie ist nur in YouTube und Instagram aktiv und prüft dort nur, ob der Shorts- bzw. Reels-Player "
+                        + "offen ist. Ist er offen und gesperrt, drückt Birdy für dich „Zurück“.\n\n"
+                        + "Birdy liest dabei keine Texte, Kommentare, Nachrichten oder Eingaben, schaut in keine anderen Apps, "
+                        + "speichert nichts darüber und überträgt nichts. Alles bleibt auf diesem Gerät.\n\n"
+                        + "Du kannst sie jederzeit in den Bedienungshilfen wieder ausschalten.")
+                .setNegativeButton("Ablehnen", null)
+                .setNeutralButton("Datenschutz", (d, w) -> open(activity, new Intent(Intent.ACTION_VIEW, Uri.parse(PRIVACY_URL))))
+                .setPositiveButton("Zustimmen", (d, w) -> open(activity, new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)))
+                .show();
+    }
+
     static Intent appInfo(Context context) {
         return new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.getPackageName(), null));
     }

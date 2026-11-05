@@ -10,6 +10,7 @@ Ein minimaler Android-Launcher: schwarz-weiß, reines Schwarz für OLED, schnell
 - Lange drücken auf eine App: anheften, in eine Gruppe legen, als Eck-Icon setzen, App-Info, deinstallieren
 - Gruppen auf dem Startscreen: tippen klappt sie auf, lange drücken wählt Apps aus, ordnet sie an, benennt um oder löscht
 - Zeitlimits pro App: Tageslimit und Schonzeiten morgens/abends; im strengen Modus (Bedienungshilfe) auch gesperrt, wenn die App an Birdy vorbei geöffnet wird
+- Shorts & Reels sperren: YouTube und Instagram bleiben nutzbar, nur der Shorts- bzw. Reels-Player wird sofort wieder verlassen (eigene Bedienungshilfe, nur für diese zwei Apps)
 - Optional: oft genutzte Apps oben in der Liste, Sortierung nach Installationsdatum, Tastatur gleich beim Hochwischen, Suchtreffer unten am Daumen, schwarzer Hintergrund für die App-Übersicht (Einstellungen in der Birdy-App)
 - Keine Libraries, keine Berechtigungs-Abfragen (Zeitlimits brauchen zwei Freigaben, nur wenn du sie nutzt), APK unter 100 KB
 
