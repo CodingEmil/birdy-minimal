@@ -36,6 +36,7 @@ public class FeedsTest {
     public void setUp() {
         prefs = RuntimeEnvironment.getApplication().getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE);
         prefs.edit().clear().commit();
+        RuntimeEnvironment.getApplication().getSharedPreferences("feeds_used", Context.MODE_PRIVATE).edit().clear().commit();
     }
 
     // A screen 2400 px high with the given views (full view id → bounds).
@@ -124,5 +125,52 @@ public class FeedsTest {
         assertEquals(android.view.View.GONE, a.findViewById(R.id.feeds_setup).getVisibility());
         ((Switch) a.findViewById(R.id.block_shorts)).setChecked(true);
         assertNull("no disclosure needed", ShadowAlertDialog.getLatestAlertDialog());
+    }
+
+    @Test
+    public void anAllowanceLetsTheFeedPlayUntilTheDaysTimeIsSpent() {
+        Context c = RuntimeEnvironment.getApplication();
+        prefs.edit().putBoolean("blockShorts", true).commit();
+        assertTrue("without an allowance it is blocked right away", Feeds.usedUp(c, Feeds.Feed.SHORTS));
+        Feeds.setAllowedMinutes(c, Feeds.Feed.SHORTS, 15);
+        assertFalse(Feeds.usedUp(c, Feeds.Feed.SHORTS));
+        Feeds.addUsed(c, Feeds.Feed.SHORTS, 14 * Feeds.MINUTE);
+        assertFalse(Feeds.usedUp(c, Feeds.Feed.SHORTS));
+        Feeds.addUsed(c, Feeds.Feed.SHORTS, Feeds.MINUTE);
+        assertTrue(Feeds.usedUp(c, Feeds.Feed.SHORTS));
+        assertEquals("Reels count on their own", 0, Feeds.usedTodayMs(c, Feeds.Feed.REELS));
+        prefs.edit().putBoolean("blockShorts", false).commit();
+        assertFalse("switched off, nothing is blocked", Feeds.usedUp(c, Feeds.Feed.SHORTS));
+    }
+
+    @Test
+    public void yesterdaysTimeDoesNotCount() {
+        Context c = RuntimeEnvironment.getApplication();
+        c.getSharedPreferences("feeds_used", Context.MODE_PRIVATE).edit()
+                .putLong("blockReelsDay", java.time.LocalDate.now().minusDays(1).toEpochDay())
+                .putLong("blockReelsMs", 3 * 60 * Feeds.MINUTE).commit();
+        assertEquals(0, Feeds.usedTodayMs(c, Feeds.Feed.REELS));
+        Feeds.addUsed(c, Feeds.Feed.REELS, 1_000);
+        assertEquals(1_000, Feeds.usedTodayMs(c, Feeds.Feed.REELS));
+    }
+
+    @Test
+    public void theAllowanceIsPickedUnderTheSwitch() {
+        android.provider.Settings.Secure.putString(RuntimeEnvironment.getApplication().getContentResolver(),
+                android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
+                new android.content.ComponentName(RuntimeEnvironment.getApplication(), FeedService.class).flattenToString());
+        SetupActivity a = Robolectric.buildActivity(SetupActivity.class).setup().get();
+        android.widget.TextView allow = a.findViewById(R.id.allow_shorts);
+        assertEquals("hidden while the switch is off", android.view.View.GONE, allow.getVisibility());
+        ((Switch) a.findViewById(R.id.block_shorts)).setChecked(true);
+        assertEquals(android.view.View.VISIBLE, allow.getVisibility());
+        assertEquals("Pro Tag: sofort gesperrt  →", allow.getText().toString());
+        allow.performClick();
+        AlertDialog d = (AlertDialog) ShadowAlertDialog.getLatestAlertDialog();
+        assertEquals("YouTube Shorts pro Tag", shadowOf(d).getTitle().toString());
+        shadowOf(d).clickOnItem(2); // 30 min
+        assertEquals(30, Feeds.allowedMinutes(a, Feeds.Feed.SHORTS));
+        assertEquals("Pro Tag: 30 min · heute 0 min  →", allow.getText().toString());
+        assertEquals("Reels keep theirs", 0, Feeds.allowedMinutes(a, Feeds.Feed.REELS));
     }
 }
