@@ -189,7 +189,7 @@ public class LimitActivity extends Activity {
         begin.show();
     }
 
-    // Shared with SetupActivity: state of both grants, each row opens its settings page.
+    // Shared with LimitsActivity: state of both grants, each row opens its settings page.
     static void bindStrictStatus(Activity activity, View root) {
         boolean usage = Usage.hasUsageAccess(activity), service = Usage.strictModeOn(activity);
         TextView usageRow = root.findViewById(R.id.strict_usage), serviceRow = root.findViewById(R.id.strict_service);

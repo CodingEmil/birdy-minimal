@@ -66,7 +66,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 public class MainActivity extends Activity {
-    static final String PREFS = "birdy"; // shared with SetupActivity, which edits the settings keys "top", "newest", "type", "bottom" and "shade"
+    static final String PREFS = "birdy"; // shared with the settings pages, which edit the keys "top", "newest", "type", "bottom", "shade" and more
     private static final int MAX_FAVORITES = 7; // apps and groups together
     private static final int TOP_COUNT = 5;
     private static final long TOP_WINDOW_MS = 3L * 24 * 60 * 60 * 1000; // "most used" looks back 3 days
@@ -236,7 +236,7 @@ public class MainActivity extends Activity {
         else animateTo(false);
     }
 
-    // Picks up the setting from SetupActivity, which only runs while home is stopped.
+    // Picks up the setting from HomeSettingsActivity, which only runs while home is stopped.
     @Override
     protected void onStart() {
         super.onStart();

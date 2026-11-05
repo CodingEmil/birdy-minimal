@@ -99,7 +99,7 @@ public class FeedsTest {
 
     @Test
     public void switchesAreOffByDefaultAndAskForTheServiceWhenTurnedOn() {
-        SetupActivity a = Robolectric.buildActivity(SetupActivity.class).setup().get();
+        FeedsActivity a = Robolectric.buildActivity(FeedsActivity.class).setup().get();
         Switch shorts = a.findViewById(R.id.block_shorts);
         assertFalse(shorts.isChecked());
         assertFalse(Feeds.blocked(a, Feeds.Feed.SHORTS));
@@ -120,7 +120,7 @@ public class FeedsTest {
                 android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
                 new android.content.ComponentName(RuntimeEnvironment.getApplication(), FeedService.class).flattenToString());
         prefs.edit().putBoolean("blockReels", true).commit();
-        SetupActivity a = Robolectric.buildActivity(SetupActivity.class).setup().get();
+        FeedsActivity a = Robolectric.buildActivity(FeedsActivity.class).setup().get();
         assertTrue(((Switch) a.findViewById(R.id.block_reels)).isChecked());
         assertEquals(android.view.View.GONE, a.findViewById(R.id.feeds_setup).getVisibility());
         ((Switch) a.findViewById(R.id.block_shorts)).setChecked(true);
@@ -159,7 +159,7 @@ public class FeedsTest {
         android.provider.Settings.Secure.putString(RuntimeEnvironment.getApplication().getContentResolver(),
                 android.provider.Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
                 new android.content.ComponentName(RuntimeEnvironment.getApplication(), FeedService.class).flattenToString());
-        SetupActivity a = Robolectric.buildActivity(SetupActivity.class).setup().get();
+        FeedsActivity a = Robolectric.buildActivity(FeedsActivity.class).setup().get();
         android.widget.TextView allow = a.findViewById(R.id.allow_shorts);
         assertEquals("hidden while the switch is off", android.view.View.GONE, allow.getVisibility());
         ((Switch) a.findViewById(R.id.block_shorts)).setChecked(true);
@@ -177,7 +177,7 @@ public class FeedsTest {
     @Test
     public void anyTimeCanBeTypedIn() {
         prefs.edit().putBoolean("blockReels", true).commit();
-        SetupActivity a = Robolectric.buildActivity(SetupActivity.class).setup().get();
+        FeedsActivity a = Robolectric.buildActivity(FeedsActivity.class).setup().get();
         android.widget.TextView allow = a.findViewById(R.id.allow_reels);
         allow.performClick();
         AlertDialog list = (AlertDialog) ShadowAlertDialog.getLatestAlertDialog();

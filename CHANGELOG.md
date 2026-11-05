@@ -8,6 +8,9 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 - **Startbildschirm ohne Statusleiste:** Oben ist es jetzt ganz schwarz, ohne Uhrzeit und Symbole. Von der oberen Kante nach unten wischen zeigt die Leiste kurz an.
 - **Tageszeit für Shorts und Reels:** Statt sofort zu sperren, kannst du Shorts und Reels 15 min, 30 min, 1 h oder eine eigene Zeit am Tag erlauben. Danach sperrt Birdy sie bis morgen. Einstellen in der Birdy-App unter „Shorts & Reels“ → „Pro Tag“.
 
+### Verbessert
+- **Aufgeräumte Einstellungen:** Die Birdy-App zeigt nur noch eine kurze Übersicht. Startbildschirm, Apps & Suche, Zeitlimits, Shorts & Reels und die Bedienung haben jeweils eine eigene Seite.
+
 ## 1.4-beta.4
 
 ### Neu

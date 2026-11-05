@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings page: leaving YouTube Shorts and Instagram Reels, right away or after a daily time. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="32dp"
+        android:paddingTop="56dp"
+        android:paddingBottom="24dp">
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:layout_marginTop="0dp"
+            android:text="Einstellungen" />
+
+        <TextView
+            style="@style/Birdy.PageTitle"
+            android:text="Shorts &amp; Reels" />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:layout_marginTop="16dp"
+            android:text="YouTube und Instagram bleiben nutzbar. Öffnest du Shorts oder Reels, geht Birdy zurück: sofort oder wenn deine Zeit für heute um ist."
+            android:textColor="#B3B3B3" />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="YouTube" />
+
+        <Switch
+            android:id="@+id/block_shorts"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="YouTube Shorts sperren" />
+
+        <TextView
+            android:id="@+id/allow_shorts"
+            style="@style/Birdy.Link"
+            android:layout_marginTop="0dp"
+            android:textColor="@color/item_text_dim"
+            android:visibility="gone" />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="Instagram" />
+
+        <Switch
+            android:id="@+id/block_reels"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Instagram Reels sperren" />
+
+        <TextView
+            android:id="@+id/allow_reels"
+            style="@style/Birdy.Link"
+            android:layout_marginTop="0dp"
+            android:textColor="@color/item_text_dim"
+            android:visibility="gone" />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="Bedienungshilfe" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:layout_marginTop="10dp"
+            android:text="Birdy erkennt Shorts und Reels über die Bedienungshilfe „Birdy Shorts &amp; Reels“. Sie ist nur in YouTube und Instagram aktiv." />
+
+        <TextView
+            android:id="@+id/feeds_setup"
+            style="@style/Birdy.Link"
+            android:text="Bedienungshilfe einschalten  →"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/feeds_setup_hint"
+            style="@style/Birdy.Hint"
+            android:visibility="gone"
+            android:text="Noch aus: Ohne sie sperrt Birdy weder Shorts noch Reels." />
+
+    </LinearLayout>
+</ScrollView>
