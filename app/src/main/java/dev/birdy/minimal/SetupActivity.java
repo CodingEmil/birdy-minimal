@@ -20,7 +20,9 @@ import java.io.IOException;
 
 // The visible "Birdy" app: explains how to make Birdy the home app and links to that setting.
 public class SetupActivity extends Activity {
+    private static final int CONTACTS = 1;
     private TextView status, action;
+    private Switch contacts;
 
     @Override
     protected void onCreate(Bundle state) {
@@ -36,6 +38,16 @@ public class SetupActivity extends Activity {
         bindSwitch(R.id.type, "type", prefs);
         bindSwitch(R.id.bottom, "bottom", prefs);
         bindSwitch(R.id.shade, "shade", prefs, true);
+        bindSwitch(R.id.web, "web", prefs, true);
+        contacts = findViewById(R.id.contacts);
+        contacts.setChecked(prefs.getBoolean("contacts", false) && ContactSearch.allowed(this));
+        contacts.setOnCheckedChangeListener((v, on) -> {
+            if (on && !ContactSearch.allowed(this)) { // the setting turns on once Android grants access
+                requestPermissions(new String[] {android.Manifest.permission.READ_CONTACTS}, CONTACTS);
+                return;
+            }
+            prefs.edit().putBoolean("contacts", on).apply();
+        });
         findViewById(R.id.setup_limits).setOnClickListener(v -> startActivity(new Intent(this, LimitsActivity.class)));
         findViewById(R.id.privacy).setOnClickListener(v ->
                 Grants.open(this, new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(Grants.PRIVACY_URL))));
@@ -45,6 +57,19 @@ public class SetupActivity extends Activity {
                 .setNegativeButton("Abbrechen", null)
                 .setPositiveButton("Ersetzen", (dialog, which) -> setBlackWallpaper())
                 .show());
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int code, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(code, permissions, results);
+        if (code != CONTACTS) return;
+        boolean granted = results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED;
+        getSharedPreferences(MainActivity.PREFS, MODE_PRIVATE).edit().putBoolean("contacts", granted).apply();
+        contacts.setChecked(granted);
+        if (!granted) {
+            Toast.makeText(this, "Ohne Zugriff auf Kontakte sucht Birdy nur Apps. Erlauben lässt er sich in der App-Info von Birdy.",
+                    Toast.LENGTH_LONG).show();
+        }
     }
 
     // Home wallpaper only: with FLAG_SYSTEM alone, Android keeps the current image on the lock screen.

@@ -19,6 +19,8 @@ Diese Daten liegen im privaten Speicher der App. Andere Apps können sie nicht l
 - **Liste der installierten Apps:** um sie im Launcher anzuzeigen und zu starten.
 - **Nutzungsdatenzugriff** (nur wenn du ihn erlaubst): um zu berechnen, wie lange eine App mit Tageslimit heute im Vordergrund war. Die Werte werden auf dem Gerät aus den Nutzungsdaten von Android gelesen und nicht gespeichert oder weitergegeben.
 - **Bedienungshilfe / AccessibilityService „Birdy Zeitlimits“** (nur wenn du den strengen Modus einschaltest): Birdy erfährt dadurch nur, *welche App* gerade in den Vordergrund kommt (ihren Paketnamen), damit gesperrte Apps abgefangen werden können, auch wenn sie über Benachrichtigungen oder „Zuletzt verwendet“ geöffnet werden. Birdy liest keine Bildschirminhalte, keine Eingaben und keine Texte, führt keine Aktionen in anderen Apps aus und überträgt nichts. Bevor du die Bedienungshilfe einschaltest, erklärt Birdy das in einem eigenen Hinweis und fragt nach deiner Zustimmung.
+- **Kontakte** (nur wenn du „Kontakte in der Suche“ einschaltest und Android den Zugriff erlaubst): Beim Suchen liest Birdy die Namen passender Kontakte, um sie als Treffer anzuzeigen und beim Antippen zu öffnen. Birdy speichert keine Kontakte und überträgt nichts.
+- **Websuche:** Findet die Suche nichts und du drückst Enter, öffnet Birdy den Suchbegriff in Chrome bzw. deinem Browser. Erst dort, beim Anbieter der Suchmaschine, wird der Begriff übertragen; Birdy selbst sendet nichts.
 - **Benachrichtigungsleiste öffnen:** für die Geste „Herunterwischen öffnet die Benachrichtigungen“.
 - **Hintergrundbild setzen:** nur wenn du in der Birdy-App „Hintergrund schwarz machen“ wählst.
 - **Apps deinstallieren anfragen:** um aus dem Lange-drücken-Menü den Deinstallations-Dialog von Android zu öffnen.
@@ -45,6 +47,8 @@ Birdy is a minimal Android launcher (package `birdy.minimal`). **Birdy collects 
 
 - **Usage access** (only if you grant it) is used on the device to compute today's foreground time of apps that have a daily limit. Nothing is stored or shared.
 - **Accessibility service "Birdy Zeitlimits"** (only if you turn on strict mode) is used solely to learn which app comes to the foreground (its package name), so blocked apps can be covered even when opened from notifications or Recents. Birdy does not read screen content, input or text, does not perform actions in other apps and transmits nothing. Birdy shows a disclosure and asks for consent before you enable it.
+- **Contacts** (only if you turn on "Kontakte in der Suche" and grant access): while you search, Birdy reads the names of matching contacts to show and open them. Nothing is stored or transmitted.
+- **Web search:** when nothing matches and you press Enter, Birdy opens the term in Chrome or your browser; only that browser's search provider receives it.
 - No ads, no analytics, no accounts, no third parties.
 
 Contact: e43399274@gmail.com · https://github.com/CodingEmil/birdy-minimal/issues

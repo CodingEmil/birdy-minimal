@@ -2,6 +2,7 @@ package dev.birdy.minimal;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.robolectric.Shadows.shadowOf;
 
@@ -828,6 +829,163 @@ public class MainActivityTest {
         list.performItemClick(list.getAdapter().getView(0, null, list), 0, 0);
         idle();
         assertEquals("com.example.wetter", shadowOf(page).getNextStartedActivity().getStringExtra(LimitActivity.PKG));
+    }
+
+    // --- Contacts and web search in the drawer ---
+
+    private static final List<ContactSearch.Contact> PEOPLE = Arrays.asList(
+            new ContactSearch.Contact("Anna Schmidt", android.net.Uri.parse("content://com.android.contacts/contacts/lookup/a/1")),
+            new ContactSearch.Contact("Mama", android.net.Uri.parse("content://com.android.contacts/contacts/lookup/m/2")),
+            new ContactSearch.Contact("Max Mustermann", android.net.Uri.parse("content://com.android.contacts/contacts/lookup/x/3")),
+            new ContactSearch.Contact("Lisa Maier", android.net.Uri.parse("content://com.android.contacts/contacts/lookup/l/4")));
+
+    private void contactsOn(boolean granted) {
+        ContactSearch.source = (context, query) -> PEOPLE; // ranking and limits happen in ContactSearch
+        prefs.edit().putBoolean("contacts", true).commit();
+        if (granted) shadowOf(RuntimeEnvironment.getApplication()).grantPermissions(android.Manifest.permission.READ_CONTACTS);
+    }
+
+    @org.junit.After
+    public void resetContacts() { ContactSearch.source = ContactSearch.PROVIDER; }
+
+    private static List<String> suggestions(MainActivity a, int id) {
+        android.widget.LinearLayout box = a.findViewById(id);
+        List<String> out = new ArrayList<>();
+        if (box.getVisibility() != View.VISIBLE) return out;
+        for (int i = 0; i < box.getChildCount(); i++) out.add(((android.widget.TextView) box.getChildAt(i)).getText().toString());
+        return out;
+    }
+
+    private static int suggestionColor(MainActivity a, int id, int index) {
+        return ((android.widget.TextView) ((android.widget.LinearLayout) a.findViewById(id)).getChildAt(index)).getCurrentTextColor();
+    }
+
+    private static void enter(MainActivity a) {
+        ((EditText) a.findViewById(R.id.search)).onEditorAction(EditorInfo.IME_ACTION_GO);
+        idle();
+    }
+
+    @Test
+    public void contactsShowBelowTopAppsAndEnterPrefersTheApp() throws Exception {
+        contactsOn(true);
+        prefs.edit().putBoolean("top", true).commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        swipeUp(a);
+        type(a, "ma");
+        assertEquals(Arrays.asList("Google Maps", "K-9 Mail"), shown(a));
+        assertEquals("apps on top, so contacts sit above the search field, closest one lowest",
+                Arrays.asList("Lisa Maier  Kontakt", "Max Mustermann  Kontakt", "Mama  Kontakt"), suggestions(a, R.id.suggestions_bottom));
+        assertTrue(suggestions(a, R.id.suggestions_top).isEmpty());
+        assertEquals("an app matches, so every contact is grey", 0xFF808080, suggestionColor(a, R.id.suggestions_bottom, 2));
+        shot(a, "17-contacts");
+        enter(a);
+        assertTrue(prefs.getString("launches", "").contains(key("Google Maps")));
+    }
+
+    @Test
+    public void withResultsAtTheBottomContactsGoToTheTop() throws Exception {
+        contactsOn(true);
+        prefs.edit().putBoolean("bottom", true).commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        swipeUp(a);
+        type(a, "ma");
+        assertEquals(Arrays.asList("Mama  Kontakt", "Max Mustermann  Kontakt", "Lisa Maier  Kontakt"), suggestions(a, R.id.suggestions_top));
+        assertTrue(suggestions(a, R.id.suggestions_bottom).isEmpty());
+    }
+
+    @Test
+    public void withoutAMatchingAppEnterOpensTheFirstContact() throws Exception {
+        contactsOn(true);
+        installApps(LABELS);
+        MainActivity a = start().get();
+        swipeUp(a);
+        type(a, "anna");
+        assertTrue(shown(a).isEmpty());
+        assertEquals(Arrays.asList("Anna Schmidt  Kontakt"), suggestions(a, R.id.suggestions_bottom));
+        assertEquals("the Enter target is white", android.graphics.Color.WHITE, suggestionColor(a, R.id.suggestions_bottom, 0));
+        enter(a);
+        android.content.Intent open = shadowOf(a).getNextStartedActivity();
+        assertEquals(android.content.Intent.ACTION_VIEW, open.getAction());
+        assertEquals(PEOPLE.get(0).uri, open.getData());
+    }
+
+    @Test
+    public void tappingAContactOpensIt() throws Exception {
+        contactsOn(true);
+        installApps(LABELS);
+        MainActivity a = start().get();
+        swipeUp(a);
+        type(a, "max");
+        ((android.widget.LinearLayout) a.findViewById(R.id.suggestions_bottom)).getChildAt(0).performClick();
+        assertEquals(PEOPLE.get(2).uri, shadowOf(a).getNextStartedActivity().getData());
+    }
+
+    @Test
+    public void contactsStayHiddenWhenOffOrNotAllowed() throws Exception {
+        contactsOn(false); // switched on, but Android has not granted access
+        installApps(LABELS);
+        MainActivity a = start().get();
+        swipeUp(a);
+        type(a, "max");
+        assertTrue(suggestions(a, R.id.suggestions_bottom).stream().noneMatch(t -> t.contains("Kontakt")));
+        shadowOf(RuntimeEnvironment.getApplication()).grantPermissions(android.Manifest.permission.READ_CONTACTS);
+        prefs.edit().putBoolean("contacts", false).commit();
+        type(a, "maxi");
+        type(a, "max");
+        assertTrue(suggestions(a, R.id.suggestions_bottom).stream().noneMatch(t -> t.contains("Kontakt")));
+    }
+
+    @Test
+    public void nothingMatchesSoEnterSearchesTheWebInChrome() throws Exception {
+        installApps(LABELS);
+        MainActivity a = start().get();
+        swipeUp(a);
+        type(a, "wetter morgen berlin");
+        assertTrue(shown(a).isEmpty());
+        assertEquals(Arrays.asList("„wetter morgen berlin“  im Web suchen"), suggestions(a, R.id.suggestions_bottom));
+        shot(a, "18-web");
+        enter(a);
+        android.content.Intent web = shadowOf(a).getNextStartedActivity();
+        assertEquals(android.content.Intent.ACTION_VIEW, web.getAction());
+        assertEquals("com.android.chrome", web.getPackage());
+        assertEquals("https://www.google.com/search?q=wetter%20morgen%20berlin", web.getDataString());
+    }
+
+    @Test
+    public void webSearchOnlyWhenNothingElseMatchesAndWhenOn() throws Exception {
+        installApps(LABELS);
+        MainActivity a = start().get();
+        swipeUp(a);
+        type(a, "wet");
+        assertTrue("an app matches", suggestions(a, R.id.suggestions_bottom).isEmpty());
+        prefs.edit().putBoolean("web", false).commit();
+        idle();
+        type(a, "xyzq");
+        assertTrue(suggestions(a, R.id.suggestions_bottom).isEmpty());
+        enter(a);
+        assertNull(shadowOf(a).getNextStartedActivity());
+        type(a, "");
+        assertEquals(View.GONE, a.findViewById(R.id.suggestions_bottom).getVisibility());
+    }
+
+    @Test
+    public void contactsSettingAsksForPermissionFirst() throws Exception {
+        SetupActivity setup = Robolectric.buildActivity(SetupActivity.class).setup().get();
+        android.widget.Switch sw = setup.findViewById(R.id.contacts);
+        assertFalse(sw.isChecked());
+        sw.setChecked(true);
+        org.robolectric.shadows.ShadowActivity.PermissionsRequest req = shadowOf(setup).getLastRequestedPermission();
+        assertEquals(android.Manifest.permission.READ_CONTACTS, req.requestedPermissions[0]);
+        assertFalse("not on until Android grants it", prefs.getBoolean("contacts", false));
+        setup.onRequestPermissionsResult(req.requestCode, req.requestedPermissions, new int[] {android.content.pm.PackageManager.PERMISSION_DENIED});
+        assertFalse(sw.isChecked());
+        assertFalse(prefs.getBoolean("contacts", false));
+        shadowOf(RuntimeEnvironment.getApplication()).grantPermissions(android.Manifest.permission.READ_CONTACTS);
+        setup.onRequestPermissionsResult(req.requestCode, req.requestedPermissions, new int[] {android.content.pm.PackageManager.PERMISSION_GRANTED});
+        assertTrue(sw.isChecked());
+        assertTrue(prefs.getBoolean("contacts", false));
     }
 
     @Test

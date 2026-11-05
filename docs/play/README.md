@@ -54,6 +54,8 @@ Keine Anmeldung nötig. Zum Testen der Zeitlimits: Birdy-App öffnen → Zeitlim
 |---|---|
 | Erhebt oder teilt deine App erforderliche Nutzerdatentypen? | **Nein** |
 
+Auch die optionale Kontaktsuche ändert daran nichts: Kontakte werden nur auf dem Gerät gelesen, um Treffer anzuzeigen, und weder gespeichert noch übertragen. Die Websuche öffnet nur den Browser.
+
 Begründung, falls nachgefragt: Birdy hat keine Internet-Berechtigung. Nutzungszeiten und Einstellungen werden nur auf dem Gerät verarbeitet und verlassen es nicht. Daten, die nur auf dem Gerät verarbeitet werden, gelten bei Google nicht als „erhoben“.
 
 **Behörden-App, Finanzfunktionen, Gesundheit, Nachrichten:** jeweils Nein.

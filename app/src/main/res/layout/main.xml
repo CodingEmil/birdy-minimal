@@ -126,6 +126,15 @@
         android:orientation="vertical"
         android:visibility="invisible">
 
+        <!-- Contacts and web search while searching, on the side away from the app results (filled in code). -->
+        <LinearLayout
+            android:id="@+id/suggestions_top"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="16dp"
+            android:visibility="gone" />
+
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -153,6 +162,14 @@
                 android:paddingVertical="40dp"
                 android:visibility="invisible" />
         </FrameLayout>
+
+        <LinearLayout
+            android:id="@+id/suggestions_bottom"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="8dp"
+            android:visibility="gone" />
 
         <EditText
             android:id="@+id/search"

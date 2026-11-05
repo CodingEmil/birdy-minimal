@@ -3,6 +3,7 @@ package dev.birdy.minimal;
 import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
@@ -80,6 +81,9 @@ public class MainActivity extends Activity {
     private boolean arranging; // home shows up/down arrows next to each entry
     private final List<App> all = new ArrayList<>(); // in list order; the adapter shows these or the search matches
     private App bestMatch; // what Enter opens and the list highlights: the first search match; null when not searching
+    private List<ContactSearch.Contact> contactHits = new ArrayList<>(); // shown beside the apps while searching
+    private boolean webOffered; // nothing matched: Enter searches the web
+    private LinearLayout suggestionsTop, suggestionsBottom;
     private ArrayAdapter<App> adapter;
     private ColorMatrixColorFilter grayscale;
     private Collator collator;
@@ -113,7 +117,7 @@ public class MainActivity extends Activity {
     // Held in a field: SharedPreferences only keeps a weak reference to listeners.
     private final SharedPreferences.OnSharedPreferenceChangeListener settingsChanged = (p, key) -> {
         if ("top".equals(key) || "newest".equals(key)) load();
-        else if ("bottom".equals(key)) applySearch(true);
+        else if ("bottom".equals(key) || "contacts".equals(key) || "web".equals(key)) applySearch(true);
     };
 
     @Override
@@ -177,6 +181,8 @@ public class MainActivity extends Activity {
         });
 
         search = findViewById(R.id.search);
+        suggestionsTop = findViewById(R.id.suggestions_top);
+        suggestionsBottom = findViewById(R.id.suggestions_bottom);
         search.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
@@ -185,9 +191,11 @@ public class MainActivity extends Activity {
                 renderTop(); // hidden while searching
             }
         });
-        // Enter on the keyboard opens the best match.
+        // Enter opens the best app, else the first contact, else searches the web.
         search.setOnEditorActionListener((v, action, event) -> {
             if (bestMatch != null) launch(bestMatch);
+            else if (!contactHits.isEmpty()) openContact(contactHits.get(0));
+            else if (webOffered) webSearch(search.getText().toString().trim());
             return true;
         });
 
@@ -413,6 +421,72 @@ public class MainActivity extends Activity {
         list.setStackFromBottom(fromBottom);
         adapter.notifyDataSetChanged();
         if (jump) list.setSelection(fromBottom ? list.getCount() - 1 : 0);
+        renderSuggestions(query, searching);
+    }
+
+    // Contacts (optional) and, when nothing matches, a web search, on the side away from the app results:
+    // at the top when apps stack up from the search field, otherwise right above the search field. The row
+    // Enter would take is white, the others grey; above the search field it is the lowest one.
+    private void renderSuggestions(String query, boolean searching) {
+        suggestionsTop.removeAllViews();
+        suggestionsBottom.removeAllViews();
+        contactHits = searching ? ContactSearch.find(this, query, prefs.getBoolean("contacts", false)) : new ArrayList<>();
+        webOffered = searching && bestMatch == null && contactHits.isEmpty() && prefs.getBoolean("web", true);
+        boolean atTop = prefs.getBoolean("bottom", false);
+        LinearLayout box = atTop ? suggestionsTop : suggestionsBottom;
+        List<View> rows = new ArrayList<>();
+        for (int i = 0; i < contactHits.size(); i++) {
+            ContactSearch.Contact contact = contactHits.get(i);
+            TextView row = (TextView) getLayoutInflater().inflate(R.layout.item, box, false);
+            SpannableStringBuilder text = new SpannableStringBuilder(contact.name).append("  ");
+            int start = text.length();
+            text.append("Kontakt");
+            text.setSpan(new ForegroundColorSpan(0xFF6B6B6B), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            text.setSpan(new RelativeSizeSpan(0.6f), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            row.setText(text);
+            boolean target = bestMatch == null && i == 0;
+            row.setTextColor(getColorStateList(target ? R.color.item_text : R.color.item_text_dim));
+            row.setOnClickListener(v -> openContact(contact));
+            rows.add(row);
+        }
+        if (webOffered) {
+            TextView row = (TextView) getLayoutInflater().inflate(R.layout.item, box, false);
+            SpannableStringBuilder text = new SpannableStringBuilder("„" + query.trim() + "“  ");
+            int start = text.length();
+            text.append("im Web suchen");
+            text.setSpan(new ForegroundColorSpan(0xFF6B6B6B), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            text.setSpan(new RelativeSizeSpan(0.6f), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            row.setText(text);
+            row.setMaxLines(2); // long queries wrap instead of losing their end
+            row.setOnClickListener(v -> webSearch(query.trim()));
+            rows.add(row);
+        }
+        if (!atTop) Collections.reverse(rows); // the Enter target sits closest to the search field
+        for (View row : rows) box.addView(row);
+        suggestionsTop.setVisibility(suggestionsTop.getChildCount() > 0 ? View.VISIBLE : View.GONE);
+        suggestionsBottom.setVisibility(suggestionsBottom.getChildCount() > 0 ? View.VISIBLE : View.GONE);
+    }
+
+    private void openContact(ContactSearch.Contact contact) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, contact.uri));
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(this, "Kontakt lässt sich nicht öffnen", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // In Chrome if it is installed, otherwise in the default browser.
+    private void webSearch(String query) {
+        Uri uri = Uri.parse("https://www.google.com/search?q=" + Uri.encode(query));
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, uri).setPackage("com.android.chrome"));
+        } catch (ActivityNotFoundException e) {
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, uri));
+            } catch (ActivityNotFoundException none) {
+                Toast.makeText(this, "Kein Browser gefunden", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     // Keys of uninstalled apps stay saved but are skipped, so a pin survives app updates and reinstalls.

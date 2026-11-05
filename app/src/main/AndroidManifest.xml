@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
     <!-- Swipe down on home opens the notification shade (install-time, no prompt). -->
     <uses-permission android:name="android.permission.EXPAND_STATUS_BAR" />
+    <!-- Optional contacts in the drawer search; asked for only when that setting is switched on. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
     <!-- Time limits: foreground time per app today. Granted by the user under "Nutzungsdatenzugriff". -->
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
@@ -23,6 +25,12 @@
         <intent>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.HOME" />
+        </intent>
+        <!-- Web search from the drawer: Chrome if present, otherwise any browser. -->
+        <package android:name="com.android.chrome" />
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
         </intent>
     </queries>
 

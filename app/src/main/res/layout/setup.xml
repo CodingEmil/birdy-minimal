@@ -114,6 +114,26 @@
             android:text="Treffer stehen beim Suchen unten über dem Suchfeld, der beste ganz unten. So erreichst du sie gut mit dem Daumen." />
 
         <Switch
+            android:id="@+id/contacts"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Kontakte in der Suche" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Beim Suchen erscheinen passende Kontakte, auf der anderen Seite als die Apps. Antippen öffnet den Kontakt. Braucht Zugriff auf deine Kontakte; Birdy liest sie nur auf dem Gerät und speichert nichts." />
+
+        <Switch
+            android:id="@+id/web"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Websuche, wenn nichts passt" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Findet die Suche weder App noch Kontakt, sucht Enter den Begriff in Chrome, ohne Chrome im Standardbrowser." />
+
+        <Switch
             android:id="@+id/shade"
             style="@style/Birdy.Line"
             android:minHeight="48dp"
