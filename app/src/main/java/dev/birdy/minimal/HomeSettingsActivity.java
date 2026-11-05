@@ -14,7 +14,8 @@ import android.widget.Toast;
 
 import java.io.IOException;
 
-// "Startbildschirm": the temperature next to the date, a black wallpaper, and swiping down for notifications.
+// "Startbildschirm": the temperature next to the date, names in small letters, a black wallpaper, and swiping down
+// for notifications.
 public class HomeSettingsActivity extends Activity {
     private static final int WEATHER = 2;
     private static final int WEATHER_SETUP = 3;
@@ -27,6 +28,7 @@ public class HomeSettingsActivity extends Activity {
         setContentView(R.layout.settings_home);
         SharedPreferences prefs = getSharedPreferences(MainActivity.PREFS, MODE_PRIVATE);
         SetupActivity.bindSwitch(this, R.id.shade, "shade", true);
+        SetupActivity.bindSwitch(this, R.id.lowercase, MainActivity.LOWERCASE, false);
         bindWeatherSwitch(prefs);
         findViewById(R.id.black_wallpaper).setOnClickListener(v -> new AlertDialog.Builder(this)
                 .setTitle("Hintergrund schwarz machen?")

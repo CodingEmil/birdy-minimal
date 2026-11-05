@@ -448,6 +448,26 @@ public class MainActivityTest {
     }
 
     @Test
+    public void namesCanBeShownInSmallLettersOnly() throws Exception {
+        prefs.edit().putString("groups", "1\tMusik\t" + key("Spotify"))
+                .putString("favorites", "group:1\n" + key("WhatsApp")).commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        assertEquals("as the apps call themselves by default", Arrays.asList("Musik  1", "WhatsApp"), homeRows(a));
+        prefs.edit().putBoolean(MainActivity.LOWERCASE, true).commit();
+        idle();
+        assertEquals("switched on in the settings: home follows at once", Arrays.asList("musik  1", "whatsapp"), homeRows(a));
+        assertTrue(shown(a).contains("google maps"));
+        assertFalse(shown(a).contains("Google Maps"));
+        type(a, "GOO");
+        assertEquals("search still finds them", "google maps", shown(a).get(0));
+        assertEquals("the group keeps its name as typed", "Musik", Groups.parse(prefs.getString("groups", "")).get("1").name);
+        prefs.edit().putBoolean(MainActivity.LOWERCASE, false).commit();
+        idle();
+        assertTrue("off again: capitals are back", homeRows(a).contains("WhatsApp"));
+    }
+
+    @Test
     public void groupListsOnlyGroupsTheAppIsNotInYet() throws Exception {
         prefs.edit().putString("groups", "1\tMusik\t" + key("Spotify") + "\n2\tSocial")
                 .putString("favorites", "group:1\ngroup:2\n" + key("Spotify")).commit();

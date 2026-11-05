@@ -66,6 +66,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 public class MainActivity extends Activity {
+    static final String LOWERCASE = "lowercase"; // app and group names in small letters only
     static final String PREFS = "birdy"; // shared with the settings pages, which edit the keys "top", "newest", "type", "bottom", "shade" and more
     private static final int MAX_FAVORITES = 7; // apps and groups together
     private static final int TOP_COUNT = 5;
@@ -78,6 +79,7 @@ public class MainActivity extends Activity {
     private final Map<String, App> apps = new HashMap<>(); // by flattened ComponentName
     private final List<String> favorites = new ArrayList<>(); // app keys and "group:<id>" entries, in home order
     private Groups groups;
+    private boolean lowercase; // app and group names in small letters (setting "Namen kleingeschrieben")
     private String openGroup; // id of the group unfolded on the home screen, or null
     private View openFirst, openLast; // its header and last row, to scroll them into view
     private boolean arranging; // home shows up/down arrows next to each entry
@@ -120,7 +122,7 @@ public class MainActivity extends Activity {
 
     // Held in a field: SharedPreferences only keeps a weak reference to listeners.
     private final SharedPreferences.OnSharedPreferenceChangeListener settingsChanged = (p, key) -> {
-        if ("top".equals(key) || "newest".equals(key)) load();
+        if ("top".equals(key) || "newest".equals(key) || LOWERCASE.equals(key)) load();
         else if ("bottom".equals(key) || "contacts".equals(key) || "web".equals(key)) applySearch(true);
     };
 
@@ -418,10 +420,11 @@ public class MainActivity extends Activity {
 
     private void load() {
         boolean newest = prefs.getBoolean("newest", false);
+        lowercase = prefs.getBoolean(LOWERCASE, false);
         List<App> sorted = new ArrayList<>();
         apps.clear();
         for (LauncherActivityInfo info : launcherApps.getActivityList(null, Process.myUserHandle())) {
-            App app = new App(info);
+            App app = new App(info, lowercase);
             if (newest) app.installed = info.getFirstInstallTime(); // a binder call each, so only when sorting by it
             sorted.add(app);
             apps.put(app.key, app);
@@ -576,7 +579,7 @@ public class MainActivity extends Activity {
     }
 
     private CharSequence groupText(Groups.Group group) {
-        SpannableStringBuilder text = new SpannableStringBuilder(group.name).append("  ");
+        SpannableStringBuilder text = new SpannableStringBuilder(name(group)).append("  ");
         int start = text.length();
         text.append(String.valueOf(members(group).size()));
         text.setSpan(new ForegroundColorSpan(0xFF6B6B6B), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -819,7 +822,7 @@ public class MainActivity extends Activity {
         boolean isRight = app.key.equals(prefs.getString("right", ""));
         PopupMenu popup = new PopupMenu(this, anchor);
         Menu menu = popup.getMenu();
-        if (inGroup != null) menu.add(0, 7, 0, "Aus „" + inGroup.name + "“ entfernen");
+        if (inGroup != null) menu.add(0, 7, 0, "Aus „" + name(inGroup) + "“ entfernen");
         if (inGroup != null && members(inGroup).size() > 1) menu.add(0, 10, 0, "Gruppe anordnen");
         menu.add(0, 1, 0, pinned ? "Vom Startscreen entfernen" : "Auf den Startscreen")
                 .setEnabled(pinned || homeEntries() < MAX_FAVORITES);
@@ -900,7 +903,7 @@ public class MainActivity extends Activity {
             if (!g.apps.contains(app.key) && favorites.contains(Groups.key(g.id))) options.add(g);
         }
         String[] items = new String[options.size() + 1];
-        for (int i = 0; i < options.size(); i++) items[i] = options.get(i).name;
+        for (int i = 0; i < options.size(); i++) items[i] = name(options.get(i));
         items[options.size()] = "Neue Gruppe…";
         new AlertDialog.Builder(this)
                 .setTitle(app.label + " hinzufügen zu")
@@ -908,7 +911,7 @@ public class MainActivity extends Activity {
                     if (which < options.size()) {
                         options.get(which).apps.add(app.key);
                         saveHome();
-                        Toast.makeText(this, "Zu „" + options.get(which).name + "“ hinzugefügt", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "Zu „" + name(options.get(which)) + "“ hinzugefügt", Toast.LENGTH_SHORT).show();
                     } else {
                         newGroup(app);
                     }
@@ -928,7 +931,7 @@ public class MainActivity extends Activity {
             if (first != null) group.apps.add(first.key);
             favorites.add(Groups.key(group.id));
             saveHome();
-            Toast.makeText(this, "Gruppe „" + group.name + "“ ist auf dem Startscreen", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Gruppe „" + name(group) + "“ ist auf dem Startscreen", Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -943,7 +946,7 @@ public class MainActivity extends Activity {
             checked[i] = group.apps.contains(all.get(i).key);
         }
         new AlertDialog.Builder(this)
-                .setTitle(group.name)
+                .setTitle(name(group))
                 .setMultiChoiceItems(labels, checked, (d, which, on) -> checked[which] = on)
                 .setNegativeButton("Abbrechen", null)
                 .setPositiveButton("Fertig", (d, which) -> {
@@ -962,7 +965,7 @@ public class MainActivity extends Activity {
 
     private void confirmDelete(Groups.Group group) {
         new AlertDialog.Builder(this)
-                .setTitle("„" + group.name + "“ löschen?")
+                .setTitle("„" + name(group) + "“ löschen?")
                 .setMessage("Nur die Gruppe verschwindet. Die Apps bleiben in der Liste und an ihren anderen Plätzen.")
                 .setNegativeButton("Abbrechen", null)
                 .setPositiveButton("Löschen", (d, which) -> {
@@ -1018,16 +1021,22 @@ public class MainActivity extends Activity {
         }
     }
 
+    // A group's name as it shows; saved as typed, so switching small letters off brings the capitals back.
+    private String name(Groups.Group group) { return lowercase ? lower(group.name) : group.name; }
+
+    static String lower(String name) { return name.toLowerCase(Locale.getDefault()); }
+
     private static final class App {
         final LauncherActivityInfo info;
         final String key;
         final String label;
         long installed; // first install time, only filled when sorting by it
 
-        App(LauncherActivityInfo info) {
+        App(LauncherActivityInfo info, boolean lowercase) {
             this.info = info;
             key = info.getComponentName().flattenToString();
-            label = info.getLabel().toString();
+            String name = info.getLabel().toString();
+            label = lowercase ? lower(name) : name;
         }
 
         @Override

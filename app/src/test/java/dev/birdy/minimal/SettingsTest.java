@@ -68,6 +68,10 @@ public class SettingsTest {
     public void switchesKeepTheirSettingsOnTheirPages() throws Exception {
         HomeSettingsActivity home = Robolectric.buildActivity(HomeSettingsActivity.class).setup().get();
         TimeLimitTest.shot(home, "17-settings-home");
+        Switch lowercase = home.findViewById(R.id.lowercase);
+        assertEquals("off by default", false, lowercase.isChecked());
+        lowercase.setChecked(true);
+        assertEquals(true, prefs.getBoolean(MainActivity.LOWERCASE, false));
         Switch shade = home.findViewById(R.id.shade);
         assertEquals("on by default", true, shade.isChecked());
         shade.setChecked(false);

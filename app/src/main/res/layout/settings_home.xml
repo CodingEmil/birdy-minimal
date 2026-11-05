@@ -45,6 +45,16 @@
             style="@style/Birdy.Hint"
             android:text="Birdy liest die Temperatur aus dem Widget deiner Wetter-App, ohne Internet und ohne Standort. Antippen öffnet die Wetter-App." />
 
+        <Switch
+            android:id="@+id/lowercase"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Namen kleingeschrieben" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="App- und Gruppennamen erscheinen nur in Kleinbuchstaben, auf dem Startscreen und in der App-Liste. Ausschalten bringt sie wieder, wie sie heißen." />
+
         <TextView
             android:id="@+id/black_wallpaper"
             style="@style/Birdy.Link"
