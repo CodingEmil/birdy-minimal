@@ -38,6 +38,7 @@ public class SessionActivity extends Activity {
         setContentView(R.layout.session);
         findViewById(R.id.session_cancel).setOnClickListener(v -> goHome());
         bind(getIntent());
+        BlockActivity.reveal(findViewById(R.id.session_content)); // only when it appears
     }
 
     @Override
@@ -95,7 +96,6 @@ public class SessionActivity extends Activity {
             if (i % 2 == 1) lp.setMarginStart(gap);
             row.addView(tile, lp);
         }
-        BlockActivity.reveal(findViewById(R.id.session_content));
     }
 
     // "10 min" with a big thin number and a small grey unit; "1 h 30 min" keeps its parts the same way.

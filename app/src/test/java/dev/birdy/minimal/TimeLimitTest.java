@@ -198,6 +198,48 @@ public class TimeLimitTest {
         assertNotNull(started(SessionActivity.class));
     }
 
+    private void front(String pkg, Class<?> activity) {
+        if (service == null) service = Robolectric.setupService(BlockService.class);
+        AccessibilityEvent e = AccessibilityEvent.obtain(AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED);
+        e.setPackageName(pkg);
+        e.setClassName(activity.getName());
+        service.onAccessibilityEvent(e);
+    }
+
+    private int blockScreensStarted() {
+        int n = 0;
+        Intent next;
+        while ((next = shadowOf(app).getNextStartedActivity()) != null) {
+            if (next.getComponent() != null && BlockActivity.class.getName().equals(next.getComponent().getClassName())) n++;
+        }
+        return n;
+    }
+
+    @Test
+    public void aBurstOfWindowChangesOpensTheBlockScreenOnce() {
+        now(22, 0);
+        limits(INSTA + "\t0\t\t1260-420");
+        front(INSTA); // splash
+        front(INSTA); // main window
+        front(app.getPackageName(), BlockActivity.class); // the block screen itself appears
+        front(INSTA); // a late change of the app behind it
+        assertEquals("one block screen, not one per window change", 1, blockScreensStarted());
+    }
+
+    @Test
+    public void comingBackAfterLeavingTheBlockScreenCoversAgain() {
+        now(22, 0);
+        limits(INSTA + "\t0\t\t1260-420");
+        front(INSTA);
+        front(app.getPackageName(), BlockActivity.class);
+        front(app.getPackageName(), MainActivity.class); // "Zum Startscreen"
+        front(INSTA); // opened again right away
+        assertEquals(2, blockScreensStarted());
+        front("com.android.systemui"); // Recents
+        front(INSTA);
+        assertEquals("via Recents too", 1, blockScreensStarted());
+    }
+
     @Test
     public void usedUpDailyLimitBlocksAsSoonAsTheAppComesToFront() {
         grantUsageAccess();

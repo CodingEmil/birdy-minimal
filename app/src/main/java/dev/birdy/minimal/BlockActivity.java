@@ -27,6 +27,7 @@ public class BlockActivity extends Activity {
         setContentView(R.layout.block);
         findViewById(R.id.block_home).setOnClickListener(v -> goHome());
         bind(getIntent());
+        reveal(findViewById(R.id.block_content)); // only when it appears, not when an open one gets new text
     }
 
     @Override
@@ -41,7 +42,6 @@ public class BlockActivity extends Activity {
         ((TextView) findViewById(R.id.block_app)).setText(label(pkg));
         ((TextView) findViewById(R.id.block_title)).setText(intent.getStringExtra(TITLE));
         ((TextView) findViewById(R.id.block_detail)).setText(intent.getStringExtra(DETAIL));
-        reveal(findViewById(R.id.block_content));
     }
 
     // The content rises a little and fades in, so the screen arrives calmly instead of popping over the app.

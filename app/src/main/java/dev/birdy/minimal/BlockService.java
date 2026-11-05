@@ -18,17 +18,25 @@ import java.util.Map;
 public class BlockService extends AccessibilityService {
     static final long MAX_WAIT = 60_000L; // re-check at least every minute: usage keeps counting, clocks drift
     static final long SETTLE = 600L; // after Recents or the shade closed: time for the app's activity to resume
+    static final long COVER_HOLD = 3_000L; // longest an app's burst of window changes may follow its cover
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable recheck = this::recheck;
     private final Runnable settle = this::settle;
     private final Map<String, Boolean> isApp = new HashMap<>(); // keyboards and system UI do not change the app in front
     private String current;
+    // The cover (block or session screen) opened last, as "block:<pkg>" / "ask:<pkg>", and when. An app coming to
+    // the front reports several window changes in a row (splash, main window, ...); the first opens the cover, the
+    // rest must not open it again, or it flashes up twice. Any other window in between (Birdy's home, another app,
+    // Recents) means the app may really be back, so the next change counts again.
+    private String cover;
+    private long coverAt;
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || event.getPackageName() == null) return;
         String pkg = event.getPackageName().toString();
+        if (cover != null && !cover.endsWith(":" + pkg) && !isCover(pkg, event.getClassName())) cover = null;
         if (!isApp(pkg)) { // Recents, the notification shade, a keyboard: the app behind may have just changed
             handler.removeCallbacks(settle);
             handler.postDelayed(settle, SETTLE);
@@ -46,6 +54,12 @@ public class BlockService extends AccessibilityService {
         if (pkg == null || pkg.equals(current) || !isApp(pkg)) return;
         current = pkg;
         recheck();
+    }
+
+    private boolean isCover(String pkg, CharSequence cls) {
+        if (!pkg.equals(getPackageName()) || cls == null) return false;
+        String c = cls.toString();
+        return c.equals(BlockActivity.class.getName()) || c.equals(SessionActivity.class.getName());
     }
 
     // Packages with a launcher entry are "apps"; the keyboard or the notification shade have none.
@@ -67,9 +81,15 @@ public class BlockService extends AccessibilityService {
         Limits.Moment moment = Usage.moment(this, limit);
         Limits.Block block = limit.check(moment);
         if (block != null) {
+            String key = (block.ask ? "ask:" : "block:") + current;
+            long now = android.os.SystemClock.elapsedRealtime();
+            if (key.equals(cover) && now - coverAt < COVER_HOLD) return; // already on its way or showing
+            cover = key;
+            coverAt = now;
             if (block.ask) SessionActivity.show(this, current, block); else BlockActivity.show(this, current, block);
             return;
         }
+        cover = null;
         long wait = limit.msUntilBlock(moment);
         handler.postDelayed(recheck, Math.max(1_000L, Math.min(MAX_WAIT, wait + 500)));
     }
