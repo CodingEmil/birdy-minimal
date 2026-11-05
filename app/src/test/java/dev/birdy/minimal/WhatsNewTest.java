@@ -95,7 +95,7 @@ public class WhatsNewTest {
         assertNotNull(d);
         assertEquals("Neu in Birdy 1.4", shadowOf(d).getTitle().toString());
         assertEquals(java.util.Arrays.asList("Neu", "Kontakte in der Suche", "Passende Kontakte erscheinen.",
-                "Startscreen anordnen", "Mit ↑ und ↓ verschieben.", "Behoben", "Liste blieb offen."), texts(d));
+                "Startscreen anordnen", "Mit ↑ und ↓ verschieben.", "Behoben", "Liste blieb offen"), texts(d));
         ShadowAlertDialog.reset();
         Robolectric.buildActivity(MainActivity.class).setup();
         assertNull("only once", dialog());
