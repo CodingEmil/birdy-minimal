@@ -125,7 +125,9 @@ public class LimitsActivity extends Activity {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         LinearLayout.LayoutParams field = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        field.setMarginsRelative(pad, Math.round(8 * density), pad, 0);
+        field.setMarginStart(pad);
+        field.setMarginEnd(pad);
+        field.topMargin = Math.round(8 * density);
         box.addView(search, field);
         box.addView(list, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Math.round(360 * density)));
 
