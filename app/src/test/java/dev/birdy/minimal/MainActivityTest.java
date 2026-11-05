@@ -782,6 +782,50 @@ public class MainActivityTest {
     }
 
     @Test
+    public void appsInsideAGroupCanBeArrangedAndKeepTheirOrder() throws Exception {
+        seedGroup("Musik", "Spotify", "Podcasts", "YouTube");
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "Musik  3").performLongClick();
+        pick("Apps anordnen");
+        assertEquals("alphabetical until arranged", Arrays.asList("Podcasts", "Spotify", "YouTube"), arrangeLabels(a));
+        assertEquals("the group header stays on top", "Musik  3",
+                ((android.widget.TextView) ((android.widget.LinearLayout) a.findViewById(R.id.favorites)).getChildAt(0)).getText().toString());
+        tapArrow(a, 3, true); // YouTube up (row 0 is the header)
+        tapArrow(a, 2, true); // and up again
+        assertEquals(Arrays.asList("YouTube", "Podcasts", "Spotify"), arrangeLabels(a));
+        assertEquals("1\tMusik\t" + Groups.MANUAL + "\t" + key("YouTube") + "\t" + key("Podcasts") + "\t" + key("Spotify"),
+                savedGroups());
+        a.findViewById(R.id.arrange_done).performClick();
+        idle();
+        assertEquals("the group stays open in the new order",
+                Arrays.asList("Musik  3", "YouTube", "Podcasts", "Spotify"), homeRows(a));
+
+        homeRow(a, "Musik  3").performLongClick();
+        pick("Apps auswählen…");
+        shadowOf(dialog()).clickOnItem(dialogItems().indexOf("Bahn"));
+        dialog().getButton(android.content.DialogInterface.BUTTON_POSITIVE).performClick();
+        idle();
+        assertEquals("a new app goes to the end, the others keep their place",
+                Arrays.asList("Musik  4", "YouTube", "Podcasts", "Spotify", "Bahn"), homeRows(a));
+    }
+
+    @Test
+    public void appInAGroupOffersArrangingTheGroup() throws Exception {
+        seedGroup("Musik", "Spotify", "Podcasts");
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "Musik  2").performClick();
+        idle();
+        homeRow(a, "Spotify").performLongClick();
+        pick("Gruppe anordnen");
+        assertEquals(Arrays.asList("Podcasts", "Spotify"), arrangeLabels(a));
+        a.onBackPressed();
+        idle();
+        assertEquals(Arrays.asList("Musik  2", "Podcasts", "Spotify"), homeRows(a));
+    }
+
+    @Test
     public void nothingToArrangeWithOneEntry() throws Exception {
         prefs.edit().putString("favorites", key("Kamera")).commit();
         installApps(LABELS);

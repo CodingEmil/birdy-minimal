@@ -81,8 +81,19 @@ jobs:
           fi
           echo "track=$track" >> "$GITHUB_OUTPUT"
           echo "name=$version" >> "$GITHUB_OUTPUT"
+          [[ -n "$track" ]] || exit 0
+          # Store notes list only what this track has not had yet: every upload leaves a tag
+          # play/<track>/<run>-<version>, and the CHANGELOG.md at the newest one says what Play users already got.
+          git fetch --depth=1 origin "+refs/tags/play/$track/*:refs/tags/play/$track/*" || true
+          last=$(git tag -l "play/$track/*" | sort -t/ -k3 -n | tail -1)
+          since=()
+          if [[ -n "$last" ]] && git show "$last:CHANGELOG.md" > "$RUNNER_TEMP/last-changelog.md"; then
+            last_version="${last#play/$track/}"; last_version="${last_version#*-}"
+            echo "Last upload to $track: $last ($last_version)"
+            since=("$RUNNER_TEMP/last-changelog.md" "$last_version")
+          fi
           mkdir -p distribution/whatsnew
-          python3 tools/changelog.py play "$version" > distribution/whatsnew/whatsnew-de-DE
+          python3 tools/changelog.py play "$version" "${since[@]}" > distribution/whatsnew/whatsnew-de-DE
           cat distribution/whatsnew/whatsnew-de-DE
 
       # Pinned to a commit (v1.1.3) so a changed tag upstream cannot slip into the release path.
@@ -97,6 +108,15 @@ jobs:
           releaseName: ${{ steps.play.outputs.name }}
           status: completed
           whatsNewDirectory: distribution/whatsnew
+
+      # Marks what this track has now, for the next upload's store notes (see "Decide Play upload").
+      - name: Remember Play upload
+        if: steps.play.outputs.track != ''
+        env:
+          TAG: play/${{ steps.play.outputs.track }}/${{ github.run_number }}-${{ steps.play.outputs.name }}
+        run: |
+          git tag -f "$TAG"
+          git push -f origin "refs/tags/$TAG"
 
       # Notes from CHANGELOG.md: v1.4 -> "## 1.4" (all its betas merged, see tools/changelog.py),
       # v1.4-beta.2 -> "## 1.4-beta.2" as a pre-release.

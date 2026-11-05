@@ -63,9 +63,9 @@ tasks.withType<Test>().configureEach {
     }
 }
 
-// "Neu in Birdy" after an update: this version's CHANGELOG section (only Neu / Verbessert / Behoben, as plain
-// text) goes into the app as assets/whatsnew.txt. A beta without its own section shows "Unveröffentlicht";
-// dev builds get an empty file and show nothing.
+// "Neu in Birdy" after an update: this version's CHANGELOG section goes into the app as assets/whatsnew.txt,
+// only "### Neu", "### Verbessert" and "### Behoben" with their "- **Titel:** Text" bullets (WhatsNew.java lays
+// them out). A beta without its own section shows "Unveröffentlicht"; dev builds get an empty file and show nothing.
 abstract class WhatsNewTask : DefaultTask() {
     @get:InputFile abstract val changelog: RegularFileProperty
     @get:Input abstract val version: Property<String>
@@ -93,11 +93,11 @@ abstract class WhatsNewTask : DefaultTask() {
             when {
                 heading != null -> {
                     current = heading.groupValues[1].trim()
-                    if (current in keep) out.append(if (out.isEmpty()) "" else "\n").append(current).append("\n")
+                    if (current in keep) out.append("### ").append(current).append("\n")
                 }
                 current !in keep -> {}
-                line.startsWith("- ") -> out.append("• ").append(line.removePrefix("- ").replace("**", "").replace("`", "")).append("\n")
-                line.isNotBlank() -> out.append(line.trim().replace("**", "").replace("`", "")).append("\n")
+                line.startsWith("- ") -> out.append(line.replace("`", "")).append("\n")
+                line.isNotBlank() -> out.append(line.trim().replace("`", "")).append("\n")
             }
         }
         val dir = outputDir.get().asFile

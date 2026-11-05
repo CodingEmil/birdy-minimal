@@ -26,7 +26,8 @@ import org.robolectric.shadows.ShadowAlertDialog;
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 36)
 public class WhatsNewTest {
-    private static final String NOTES = "Neu\n• Kontakte in der Suche\n• Startscreen anordnen";
+    private static final String NOTES = "### Neu\n- **Kontakte in der Suche:** Passende Kontakte erscheinen.\n"
+            + "- **Startscreen anordnen:** Mit ↑ und ↓ verschieben.\n### Behoben\n- Liste blieb offen.";
 
     private Application app;
     private SharedPreferences prefs;
@@ -56,6 +57,27 @@ public class WhatsNewTest {
         return (AlertDialog) ShadowAlertDialog.getLatestAlertDialog();
     }
 
+    private static java.util.List<String> texts(AlertDialog d) {
+        android.widget.LinearLayout list = d.findViewById(R.id.whatsnew_list);
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (int i = 0; i < list.getChildCount(); i++) out.add(((android.widget.TextView) list.getChildAt(i)).getText().toString());
+        return out;
+    }
+
+    @Test
+    public void parsesTitlesDetailsAndContinuationLines() {
+        java.util.List<WhatsNew.Section> s = WhatsNew.parse(
+                "### Neu\n- **Gruppen:** Apps bündeln,\n  auch mehrfach.\n- **Kurz**\n- Ohne `Fett`\n### Intern\n\n### Leer\n");
+        assertEquals("sections without items drop out", 1, s.size());
+        assertEquals("Neu", s.get(0).name);
+        assertEquals("Gruppen", s.get(0).items.get(0).title);
+        assertEquals("Apps bündeln, auch mehrfach.", s.get(0).items.get(0).detail);
+        assertEquals("Kurz", s.get(0).items.get(1).title);
+        assertEquals("", s.get(0).items.get(1).detail);
+        assertEquals("Ohne Fett", s.get(0).items.get(2).title);
+        assertTrue(WhatsNew.parse("  \n").isEmpty());
+    }
+
     @Test
     public void freshInstallShowsNothingButRemembersTheVersion() {
         version("1.4", 40, false);
@@ -72,7 +94,8 @@ public class WhatsNewTest {
         AlertDialog d = dialog();
         assertNotNull(d);
         assertEquals("Neu in Birdy 1.4", shadowOf(d).getTitle().toString());
-        assertEquals(NOTES, shadowOf(d).getMessage().toString());
+        assertEquals(java.util.Arrays.asList("Neu", "Kontakte in der Suche", "Passende Kontakte erscheinen.",
+                "Startscreen anordnen", "Mit ↑ und ↓ verschieben.", "Behoben", "Liste blieb offen."), texts(d));
         ShadowAlertDialog.reset();
         Robolectric.buildActivity(MainActivity.class).setup();
         assertNull("only once", dialog());

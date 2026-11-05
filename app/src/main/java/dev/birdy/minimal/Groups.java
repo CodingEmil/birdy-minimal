@@ -9,12 +9,16 @@ import java.util.Map;
 // App groups on the home screen. A group holds copies of app keys: the apps stay in the list, may sit in several
 // groups and may be pinned on their own too. Saved as one line per group: id TAB name TAB key TAB key ...
 // On the home screen a group is the favorites entry "group:<id>".
+// A group the user arranged by hand carries the token MANUAL before its keys and shows its apps in saved order;
+// otherwise they show alphabetically. Older versions read the token as a key of an app that is not installed.
 final class Groups {
     static final String PREFIX = "group:";
+    static final String MANUAL = "@manual";
 
     static final class Group {
         final String id;
         String name;
+        boolean manual; // apps in saved order instead of alphabetical
         final List<String> apps = new ArrayList<>();
 
         Group(String id, String name) {
@@ -31,7 +35,10 @@ final class Groups {
             String[] parts = line.split("\t");
             if (parts.length < 2 || parts[0].isEmpty()) continue;
             Group g = new Group(parts[0], parts[1]);
-            for (int i = 2; i < parts.length; i++) if (!parts[i].isEmpty() && !g.apps.contains(parts[i])) g.apps.add(parts[i]);
+            for (int i = 2; i < parts.length; i++) {
+                if (MANUAL.equals(parts[i])) g.manual = true;
+                else if (!parts[i].isEmpty() && !g.apps.contains(parts[i])) g.apps.add(parts[i]);
+            }
             groups.byId.put(g.id, g);
         }
         return groups;
@@ -42,6 +49,7 @@ final class Groups {
         for (Group g : byId.values()) {
             if (out.length() > 0) out.append('\n');
             out.append(g.id).append('\t').append(g.name);
+            if (g.manual) out.append('\t').append(MANUAL);
             for (String key : g.apps) out.append('\t').append(key);
         }
         return out.toString();

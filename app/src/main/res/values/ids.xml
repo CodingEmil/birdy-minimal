@@ -7,4 +7,6 @@
     <item name="app_list" type="id" />
     <!-- "Fertig" row while arranging the home screen. -->
     <item name="arrange_done" type="id" />
+    <!-- Item list in the "Neu in Birdy" popup (built in code). -->
+    <item name="whatsnew_list" type="id" />
 </resources>

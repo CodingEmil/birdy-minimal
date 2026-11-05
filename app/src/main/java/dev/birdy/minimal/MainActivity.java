@@ -79,6 +79,7 @@ public class MainActivity extends Activity {
     private String openGroup; // id of the group unfolded on the home screen, or null
     private View openFirst, openLast; // its header and last row, to scroll them into view
     private boolean arranging; // home shows up/down arrows next to each entry
+    private String arrangingGroup; // while arranging: id of the group whose apps get the arrows, or null for home
     private final List<App> all = new ArrayList<>(); // in list order; the adapter shows these or the search matches
     private App bestMatch; // what Enter opens and the list highlights: the first search match; null when not searching
     private List<ContactSearch.Contact> contactHits = new ArrayList<>(); // shown beside the apps while searching
@@ -561,33 +562,47 @@ public class MainActivity extends Activity {
 
     private void startArranging() {
         openGroup = null;
+        arrangingGroup = null;
         arranging = true;
         if (drawerOpen) animateTo(false);
+        renderHome();
+    }
+
+    // The apps inside one group get the arrows; the group stays open afterwards.
+    private void startArranging(Groups.Group group) {
+        startArranging();
+        arrangingGroup = group.id;
         renderHome();
     }
 
     private void stopArranging() {
         if (!arranging) return;
         arranging = false;
+        if (arrangingGroup != null && groups.get(arrangingGroup) != null) openGroup = arrangingGroup;
+        arrangingGroup = null;
         renderHome();
     }
 
     private void renderArranging() {
-        List<String> keys = homeKeys();
-        int arrow = Math.round(48 * density), end = Math.round(16 * density);
-        for (int i = 0; i < keys.size(); i++) {
-            String key = keys.get(i);
-            LinearLayout row = new LinearLayout(this);
-            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
-            row.setPaddingRelative(0, 0, end, 0);
-            TextView label = (TextView) getLayoutInflater().inflate(R.layout.item, row, false);
-            label.setText(Groups.isKey(key) ? groupText(groups.get(Groups.idOf(key))) : apps.get(key).label);
-            label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
-            label.setPaddingRelative(label.getPaddingStart(), label.getPaddingTop(), 0, label.getPaddingBottom());
-            row.addView(label, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-            row.addView(arrowButton(R.drawable.ic_up, "Nach oben", i > 0, () -> move(key, -1)), new LinearLayout.LayoutParams(arrow, arrow));
-            row.addView(arrowButton(R.drawable.ic_down, "Nach unten", i < keys.size() - 1, () -> move(key, 1)), new LinearLayout.LayoutParams(arrow, arrow));
-            favoritesView.addView(row);
+        Groups.Group group = arrangingGroup == null ? null : groups.get(arrangingGroup);
+        if (group != null) {
+            TextView header = (TextView) getLayoutInflater().inflate(R.layout.item, favoritesView, false);
+            header.setText(groupText(group));
+            header.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
+            header.setEnabled(false); // only the apps below move
+            favoritesView.addView(header);
+            List<App> members = members(group);
+            for (int i = 0; i < members.size(); i++) {
+                App app = members.get(i);
+                arrangeRow(app.label, 20, Math.round(56 * density), i, members.size(), d -> moveInGroup(group, app.key, d));
+            }
+        } else {
+            List<String> keys = homeKeys();
+            for (int i = 0; i < keys.size(); i++) {
+                String key = keys.get(i);
+                CharSequence text = Groups.isKey(key) ? groupText(groups.get(Groups.idOf(key))) : apps.get(key).label;
+                arrangeRow(text, 28, -1, i, keys.size(), d -> move(key, d));
+            }
         }
         TextView done = (TextView) getLayoutInflater().inflate(R.layout.item, favoritesView, false);
         done.setId(R.id.arrange_done);
@@ -595,6 +610,22 @@ public class MainActivity extends Activity {
         done.setFontVariationSettings("'wght' 500");
         done.setOnClickListener(v -> stopArranging());
         favoritesView.addView(done);
+    }
+
+    // indent < 0 keeps the row's own start padding.
+    private void arrangeRow(CharSequence text, int sp, int indent, int index, int count, java.util.function.IntConsumer move) {
+        int arrow = Math.round(48 * density), end = Math.round(16 * density);
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        row.setPaddingRelative(0, 0, end, 0);
+        TextView label = (TextView) getLayoutInflater().inflate(R.layout.item, row, false);
+        label.setText(text);
+        label.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
+        label.setPaddingRelative(indent < 0 ? label.getPaddingStart() : indent, label.getPaddingTop(), 0, label.getPaddingBottom());
+        row.addView(label, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        row.addView(arrowButton(R.drawable.ic_up, "Nach oben", index > 0, () -> move.accept(-1)), new LinearLayout.LayoutParams(arrow, arrow));
+        row.addView(arrowButton(R.drawable.ic_down, "Nach unten", index < count - 1, () -> move.accept(1)), new LinearLayout.LayoutParams(arrow, arrow));
+        favoritesView.addView(row);
     }
 
     private ImageView arrowButton(int icon, String description, boolean enabled, Runnable action) {
@@ -619,7 +650,26 @@ public class MainActivity extends Activity {
         saveHome();
     }
 
-    // Indented and smaller under the group header, alphabetical.
+    // Same within a group. The first move fixes the order seen so far (alphabetical) and makes it manual.
+    private void moveInGroup(Groups.Group group, String key, int direction) {
+        List<App> members = members(group);
+        if (!group.manual) {
+            List<String> ordered = new ArrayList<>();
+            for (App app : members) ordered.add(app.key);
+            for (String k : group.apps) if (!ordered.contains(k)) ordered.add(k); // uninstalled ones at the end
+            group.apps.clear();
+            group.apps.addAll(ordered);
+            group.manual = true;
+        }
+        int i = -1;
+        for (int n = 0; n < members.size(); n++) if (members.get(n).key.equals(key)) i = n;
+        int j = i + direction;
+        if (i < 0 || j < 0 || j >= members.size()) return;
+        Collections.swap(group.apps, group.apps.indexOf(key), group.apps.indexOf(members.get(j).key));
+        saveHome();
+    }
+
+    // Indented and smaller under the group header, alphabetical or in the order the user arranged.
     private void addGroupApps(Groups.Group group) {
         int indent = Math.round(56 * density), pad = Math.round(32 * density);
         List<App> members = members(group);
@@ -639,14 +689,14 @@ public class MainActivity extends Activity {
         }
     }
 
-    // Installed apps of a group, alphabetical; uninstalled ones stay saved, like pins.
+    // Installed apps of a group, alphabetical unless arranged by hand; uninstalled ones stay saved, like pins.
     private List<App> members(Groups.Group group) {
         List<App> out = new ArrayList<>();
         for (String key : group.apps) {
             App app = apps.get(key);
             if (app != null) out.add(app);
         }
-        out.sort((a, b) -> collator.compare(a.label, b.label));
+        if (!group.manual) out.sort((a, b) -> collator.compare(a.label, b.label));
         return out;
     }
 
@@ -735,6 +785,7 @@ public class MainActivity extends Activity {
         PopupMenu popup = new PopupMenu(this, anchor);
         Menu menu = popup.getMenu();
         if (inGroup != null) menu.add(0, 7, 0, "Aus „" + inGroup.name + "“ entfernen");
+        if (inGroup != null && members(inGroup).size() > 1) menu.add(0, 10, 0, "Gruppe anordnen");
         menu.add(0, 1, 0, pinned ? "Vom Startscreen entfernen" : "Auf den Startscreen")
                 .setEnabled(pinned || homeEntries() < MAX_FAVORITES);
         menu.add(0, 6, 0, "Zu Gruppe hinzufügen…");
@@ -763,6 +814,9 @@ public class MainActivity extends Activity {
                 case 9:
                     startArranging();
                     return true;
+                case 10:
+                    startArranging(inGroup);
+                    return true;
                 case 2:
                     prefs.edit().putString("left", isLeft ? "" : app.key).apply();
                     break;
@@ -787,6 +841,7 @@ public class MainActivity extends Activity {
         PopupMenu popup = new PopupMenu(this, anchor);
         Menu menu = popup.getMenu();
         menu.add(0, 1, 0, "Apps auswählen…");
+        if (members(group).size() > 1) menu.add(0, 5, 0, "Apps anordnen");
         menu.add(0, 2, 0, "Umbenennen");
         menu.add(0, 3, 0, "Gruppe löschen");
         if (homeEntries() > 1) menu.add(0, 4, 0, "Startscreen anordnen");
@@ -796,6 +851,7 @@ public class MainActivity extends Activity {
                 case 2: askName("Gruppe umbenennen", group.name, "Speichern", name -> { group.name = name; saveHome(); }); break;
                 case 3: confirmDelete(group); break;
                 case 4: startArranging(); break;
+                case 5: startArranging(group); break;
             }
             return true;
         });
@@ -856,8 +912,13 @@ public class MainActivity extends Activity {
                 .setMultiChoiceItems(labels, checked, (d, which, on) -> checked[which] = on)
                 .setNegativeButton("Abbrechen", null)
                 .setPositiveButton("Fertig", (d, which) -> {
-                    group.apps.removeIf(apps::containsKey); // keeps saved keys of apps that are not installed right now
-                    for (int i = 0; i < all.size(); i++) if (checked[i]) group.apps.add(all.get(i).key);
+                    // Unchecked ones go; saved keys of apps that are not installed right now stay. Kept apps keep their
+                    // place (it matters once the group is arranged by hand), new ones go to the end.
+                    for (int i = 0; i < all.size(); i++) {
+                        String key = all.get(i).key;
+                        if (!checked[i]) group.apps.remove(key);
+                        else if (!group.apps.contains(key)) group.apps.add(key);
+                    }
                     openGroup = group.id;
                     saveHome();
                 })

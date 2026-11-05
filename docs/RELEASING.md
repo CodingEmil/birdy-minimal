@@ -12,6 +12,8 @@ Zwei Arten von Versionen:
 
 Ein Push auf `main` baut und testet nur, er lädt nichts hoch.
 
+Wie Einträge aussehen und wie sie vor einem Release durchgegangen werden: `.claude/skills/changelog/SKILL.md` (Kurzform: `- **Titel:** ein bis zwei kurze Sätze`, vor jedem Release zusammenfassen und kürzen).
+
 ## Beta
 
 1. Alles Neue steht in `CHANGELOG.md` unter `## Unveröffentlicht` (Abschnitte `### Neu`, `### Verbessert`, `### Behoben`, `### Intern`).
@@ -26,7 +28,17 @@ Ein Push auf `main` baut und testet nur, er lädt nichts hoch.
 ## Volle Version
 
 1. `python3 tools/changelog.py release 1.4`: führt „Unveröffentlicht“ und alle `## 1.4-beta.N` zu einem `## 1.4` zusammen (nach Wichtig, Neu, Verbessert, Behoben, Intern sortiert, ohne Doppelungen). Committen und nach `main` bringen.
-2. Tag `v1.4` setzen (wie oben). Die CI baut, erstellt den GitHub-Release und lädt das Bundle zu Google Play hoch. Die Store-Versionshinweise (max. 500 Zeichen) erzeugt sie aus demselben Abschnitt (`python3 tools/changelog.py play 1.4`).
+2. Tag `v1.4` setzen (wie oben). Die CI baut, erstellt den GitHub-Release und lädt das Bundle zu Google Play hoch. Die Store-Versionshinweise (max. 500 Zeichen) erzeugt sie aus demselben Abschnitt, aber nur mit dem, was es seit dem letzten Upload auf diesen Track noch nicht gab (siehe unten).
+
+## Play-Hinweise: nur Neuerungen
+
+Nach jedem Play-Upload setzt die CI ein Tag `play/<track>/<lauf>-<version>` (z. B. `play/alpha/57-1.4`). Beim nächsten Upload auf denselben Track vergleicht `tools/changelog.py play` die Punkte mit dem `CHANGELOG.md` dieses Tags und schreibt nur neue Punkte in „Neuerungen“. Eine volle `1.4` nach `1.4-beta.2` auf demselben Track zeigt also nur, was nach der Beta dazukam. Ohne Tag (erster Upload auf einem Track) stehen alle Punkte der Version drin.
+
+Uploads von vor diesem Mechanismus haben kein Tag. Für den Upload von `1.4-beta.2` einmalig nachtragen (Track anpassen, falls nicht `alpha`):
+```
+git tag play/alpha/0-1.4-beta.2 5a036dc
+git push origin play/alpha/0-1.4-beta.2
+```
 
 ## Einstellungen (GitHub → Settings → Secrets and variables → Actions → Variables)
 

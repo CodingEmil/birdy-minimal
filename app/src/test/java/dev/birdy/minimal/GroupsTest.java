@@ -54,4 +54,18 @@ public class GroupsTest {
         assertEquals("3", Groups.idOf(Groups.key("3")));
         assertEquals(false, Groups.isKey("com.a/.Main"));
     }
+
+    @Test
+    public void manualOrderSurvivesTheSavedString() {
+        Groups groups = new Groups();
+        Groups.Group g = groups.create("Musik");
+        g.apps.add("com.z/.Main");
+        g.apps.add("com.a/.Main");
+        assertEquals("1\tMusik\tcom.z/.Main\tcom.a/.Main", groups.serialize());
+        g.manual = true;
+        Groups back = Groups.parse(groups.serialize());
+        assertTrue(back.get("1").manual);
+        assertEquals(Arrays.asList("com.z/.Main", "com.a/.Main"), back.get("1").apps);
+        assertEquals(false, Groups.parse("1\tMusik\tcom.a/.Main").get("1").manual);
+    }
 }

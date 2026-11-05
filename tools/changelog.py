@@ -4,7 +4,10 @@
   changelog.py beta 1.4-beta.2   "## Unveröffentlicht" becomes "## 1.4-beta.2", a new empty one goes on top
   changelog.py release 1.4       merges "Unveröffentlicht" and every "## 1.4-beta.N" into one "## 1.4"
   changelog.py notes 1.4         prints that version's section (GitHub release text)
-  changelog.py play 1.4          prints short store notes, at most 500 characters (Google Play "What's new")
+  changelog.py play 1.4 [OLD_CHANGELOG OLD_VERSION]
+                                 prints short store notes, at most 500 characters (Google Play "What's new").
+                                 With the CHANGELOG.md of the last Play upload on that track and its version, only
+                                 bullets that were not in that upload yet (the CI passes them, see build.yml).
 
 A section is "## <version>" with "### Neu", "### Verbessert", ... and "- " bullets below.
 """
@@ -98,8 +101,8 @@ def cmd_release(version):
     save(preamble, [(UNRELEASED, ""), (version, render(merged))] + rest)
 
 
-def notes_body(version):
-    _, sections = split(FILE.read_text(encoding="utf-8"))
+def notes_body(version, text=None):
+    _, sections = split(FILE.read_text(encoding="utf-8") if text is None else text)
     body = section(sections, version)
     if body is None and "-" in version:  # a beta tagged without its own section
         body = section(sections, UNRELEASED)
@@ -110,19 +113,55 @@ def cmd_notes(version):
     print(notes_body(version))
 
 
-def cmd_play(version):
-    """The bold lead of each user-facing bullet, as a short list that fits Google's 500 characters."""
-    cats = categories(notes_body(version))
-    lines = []
+def key(item):
+    """Bullets compare by their words, so a changed bold mark or comma does not count as new."""
+    return re.sub(r"\W+", " ", item).strip().lower()
+
+
+def shipped(old_text, old_version):
+    """Every bullet the last Play upload already had: its own notes and every released section before it."""
+    _, sections = split(old_text)
+    keys = set()
+    bodies = [b for h, b in sections if h != UNRELEASED] + [notes_body(old_version, old_text)]
+    for body in bodies:
+        for items in categories(body).values():
+            keys.update(key(i) for i in items)
+    return keys
+
+
+def play_items(version, old_text=None, old_version=None):
+    """(title, first sentence of the detail) for the user-facing bullets, minus what Play users already got."""
+    known = shipped(old_text, old_version) if old_text is not None else set()
+    items = []
     for cat in ["Neu", "Verbessert", "Behoben"]:  # "Wichtig" and "Intern" are for GitHub readers
-        for item in cats.get(cat, []):
-            first = item.splitlines()[0][2:]
-            m = re.match(r"\*\*(.+?)\*\*", first)
-            text = (m.group(1) if m else first).rstrip(":").strip()
-            text = re.sub(r"[*`]", "", text)
-            lines.append("• " + (text if len(text) <= 90 else text[:87].rstrip() + "…"))
+        for item in categories(notes_body(version)).get(cat, []):
+            if key(item) in known:
+                continue
+            text = re.sub(r"`", "", " ".join(l.strip() for l in item.splitlines())[2:])
+            m = re.match(r"\*\*(.+?)\*\*\s*(.*)$", text)
+            title, detail = (m.group(1), m.group(2)) if m else (text, "")
+            title = re.sub(r"\*", "", title).rstrip(":. ").strip()
+            detail = re.split(r"(?<=[.!?])\s", re.sub(r"\*", "", detail).strip())[0] if detail else ""
+            items.append((title, detail))
+    return items
+
+
+def cmd_play(version, old_changelog=None, old_version=None):
+    """One "• " line per new bullet: with its first sentence if everything fits into Google's 500 characters,
+    else only the bold titles, else as many titles as fit plus "• und mehr"."""
+    old_text = Path(old_changelog).read_text(encoding="utf-8") if old_changelog else None
+    items = play_items(version, old_text, old_version)
+    if not items:
+        print("Kleine Verbesserungen und Fehlerbehebungen.")
+        return
+    short = lambda t: t if len(t) <= 90 else t[:87].rstrip() + "…"
+    full = "\n".join("• " + (f"{short(t)}: {d}" if d else short(t)) for t, d in items)
+    if len(full) <= 500:
+        print(full)
+        return
     out = ""
-    for line in lines:
+    for t, _ in items:
+        line = "• " + short(t)
         if len(out) + len(line) + 1 > 500 - len("• und mehr"):
             out += "• und mehr"
             break
@@ -132,6 +171,7 @@ def cmd_play(version):
 
 if __name__ == "__main__":
     commands = {"beta": cmd_beta, "release": cmd_release, "notes": cmd_notes, "play": cmd_play}
-    if len(sys.argv) != 3 or sys.argv[1] not in commands:
+    args = sys.argv[1:]
+    if not args or args[0] not in commands or len(args) not in ((2, 4) if args[0] == "play" else (2,)):
         sys.exit(__doc__)
-    commands[sys.argv[1]](sys.argv[2])
+    commands[args[0]](*args[1:])
