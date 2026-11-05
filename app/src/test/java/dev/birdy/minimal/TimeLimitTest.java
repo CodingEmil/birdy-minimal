@@ -1,5 +1,6 @@
 package dev.birdy.minimal;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -758,5 +759,114 @@ public class TimeLimitTest {
         SetupActivity setup = Robolectric.buildActivity(SetupActivity.class).setup().get();
         setup.findViewById(R.id.privacy).performClick();
         assertEquals(Grants.PRIVACY_URL, shadowOf(setup).getNextStartedActivity().getDataString());
+    }
+
+    // --- The session bar: only over the app whose session runs ---
+
+    private void windowEvent(String pkg, String cls, int contentChange) {
+        AccessibilityEvent e = AccessibilityEvent.obtain(AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED);
+        e.setPackageName(pkg);
+        e.setClassName(cls);
+        e.setContentChangeTypes(contentChange);
+        service.onAccessibilityEvent(e);
+    }
+
+    private void inSession() {
+        now(14, 0);
+        limits(INSTA + "\t0\t\t\t1\t0");
+        Usage.startSession(app, Usage.load(app).get(INSTA), 10);
+        front(INSTA);
+        assertNotNull("shows in the app", service.bar);
+    }
+
+    @Test
+    public void sessionBarGoesWithTheAppAndComesBack() {
+        inSession();
+        front(TUBE);
+        assertNull("another app", service.bar);
+        front(INSTA);
+        assertNotNull(service.bar);
+        front(app.getPackageName());
+        assertNull("home", service.bar);
+        front(INSTA);
+        assertNotNull(service.bar);
+    }
+
+    @Test
+    public void sessionBarDoesNotRemoveItself() {
+        inSession();
+        windowEvent(app.getPackageName(), android.view.View.class.getName(), 0);
+        assertNotNull(service.bar);
+    }
+
+    @Test
+    public void sessionBarIgnoresAClosingPaneOfTheAppJustLeft() {
+        inSession();
+        front(app.getPackageName());
+        windowEvent(INSTA, "android.widget.FrameLayout", AccessibilityEvent.CONTENT_CHANGE_TYPE_PANE_DISAPPEARED);
+        assertNull("YouTube sends this after Home", service.bar);
+    }
+
+    @Test
+    public void sessionBarHidesUnderTheShadeButNotForTheVolumePanel() {
+        inSession();
+        windowEvent("com.android.systemui", "com.android.systemui.volume.VolumeDialogImpl$CustomDialog", 0);
+        assertNotNull("the app does not report back after the volume panel", service.bar);
+        windowEvent("com.android.systemui", "android.widget.FrameLayout", 0);
+        assertNull("the shade", service.bar);
+        windowEvent("com.android.systemui", "android.widget.FrameLayout", AccessibilityEvent.CONTENT_CHANGE_TYPE_PANE_DISAPPEARED);
+        assertNull("a closing pane does not bring it back", service.bar);
+        front(INSTA);
+        assertNotNull("the app has focus again", service.bar);
+    }
+
+    @Test
+    public void sessionBarStaysForTheKeyboardAndGoesForRecents() {
+        inSession();
+        android.provider.Settings.Secure.putString(app.getContentResolver(), android.provider.Settings.Secure.DEFAULT_INPUT_METHOD, KEYBOARD + "/.Ime");
+        front(KEYBOARD);
+        assertNotNull(service.bar);
+        front("com.google.android.apps.nexuslauncher");
+        assertNull(service.bar);
+    }
+
+    @Test
+    public void sessionBarEndsWithTheSession() {
+        inSession();
+        idle(Duration.ofMinutes(11));
+        assertNull(service.bar);
+    }
+
+    @Test
+    public void noSessionBarWithoutASessionRule() {
+        inSession();
+        front(TUBE);
+        limits(INSTA + "\t60\t\t\t0\t0"); // asking switched off while the session still runs
+        front(INSTA);
+        assertNull(service.bar);
+    }
+
+    @Test
+    public void sessionBarEdgeFollowsTheClock() {
+        assertEquals(0, SessionBar.edge(1000, 100, 200, 50));
+        assertEquals(0, SessionBar.edge(1000, 100, 200, 100));
+        assertEquals(250, SessionBar.edge(1000, 100, 200, 125));
+        assertEquals(1000, SessionBar.edge(1000, 100, 200, 200));
+        assertEquals(1000, SessionBar.edge(1000, 100, 200, 900));
+    }
+
+    @Test
+    public void sessionLinesFromBeforeTheBarStillLoad() {
+        prefs.edit().putString("sessions", INSTA + "\t500\t600").commit();
+        assertArrayEquals(new long[] {500, 600, 0}, Usage.session(app, INSTA));
+        now(14, 0);
+        limits(TUBE + "\t0\t\t\t1\t0\n" + INSTA + "\t0\t\t\t1\t0");
+        long end = Usage.now() + 60_000;
+        prefs.edit().putString("sessions", INSTA + "\t" + end + "\t" + end).commit();
+        Usage.startSession(app, Usage.load(app).get(TUBE), 5);
+        assertEquals("the old line survives another app's session", end, Usage.session(app, INSTA)[0]);
+        front(INSTA);
+        assertNull("no start known: no bar, but still inside the session", service.bar);
+        assertNull(started(SessionActivity.class));
     }
 }

@@ -1,10 +1,19 @@
 package dev.birdy.minimal;
 
 import android.accessibilityservice.AccessibilityService;
+import android.app.KeyguardManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.graphics.PixelFormat;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
+import android.view.Gravity;
+import android.view.View;
+import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 
 import java.util.HashMap;
@@ -19,6 +28,7 @@ public class BlockService extends AccessibilityService {
     static final long MAX_WAIT = 60_000L; // re-check at least every minute: usage keeps counting, clocks drift
     static final long SETTLE = 600L; // after Recents or the shade closed: time for the app's activity to resume
     static final long COVER_HOLD = 3_000L; // longest an app's burst of window changes may follow its cover
+    static final int BAR_DP = 3;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable recheck = this::recheck;
@@ -31,19 +41,35 @@ public class BlockService extends AccessibilityService {
     // Recents) means the app may really be back, so the next change counts again.
     private String cover;
     private long coverAt;
+    private boolean obscured; // Recents, the shade or a system dialog lies over the app in front
+    SessionBar bar; // visible to tests
+    private long barEnd;
+    private final BroadcastReceiver screen = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) { updateBar(); }
+    };
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || event.getPackageName() == null) return;
         String pkg = event.getPackageName().toString();
+        // The bar's own window reports itself when it appears; it must not count as Birdy coming to the front.
+        if (pkg.equals(getPackageName()) && View.class.getName().contentEquals(String.valueOf(event.getClassName()))) return;
+        // A part of a window closing says nothing about who is in front: YouTube sends this after Home, the shade after closing.
+        boolean paneGone = (event.getContentChangeTypes() & AccessibilityEvent.CONTENT_CHANGE_TYPE_PANE_DISAPPEARED) != 0;
+        if (paneGone && isApp(pkg)) return;
         if (cover != null && !cover.endsWith(":" + pkg) && !isCover(pkg, event.getClassName())) cover = null;
         if (!isApp(pkg)) { // Recents, the notification shade, a keyboard: the app behind may have just changed
             handler.removeCallbacks(settle);
             handler.postDelayed(settle, SETTLE);
+            if (!paneGone && covers(pkg, event.getClassName())) {
+                obscured = true; // until the app reports back: a window sends this whenever it regains focus
+                updateBar();
+            }
             return;
         }
         handler.removeCallbacks(settle);
         current = pkg;
+        obscured = false;
         recheck();
     }
 
@@ -53,7 +79,16 @@ public class BlockService extends AccessibilityService {
         String pkg = Usage.lastResumed(this, SETTLE + 10_000L);
         if (pkg == null || pkg.equals(current) || !isApp(pkg)) return;
         current = pkg;
+        obscured = false;
         recheck();
+    }
+
+    // Does this window lie over the app, so the bar must go? Not the keyboard, and of the system UI only the shade:
+    // the volume panel never takes focus, so the app would not report back after it.
+    private boolean covers(String pkg, CharSequence cls) {
+        if (pkg.equals("com.android.systemui")) return cls != null && cls.toString().equals("android.widget.FrameLayout");
+        String ime = Settings.Secure.getString(getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
+        return ime == null || !ime.startsWith(pkg + "/");
     }
 
     private boolean isCover(String pkg, CharSequence cls) {
@@ -73,8 +108,33 @@ public class BlockService extends AccessibilityService {
         return known;
     }
 
+    // The session bar shows only over the app whose session runs, and not over the lock screen or anything above the
+    // app: an accessibility overlay would draw on top of those too. Not a touch target, touches go through to the app.
+    private void updateBar() {
+        Limits.AppLimit limit = current == null || obscured ? null : Usage.load(this).get(current);
+        long[] session = limit != null && limit.ask ? Usage.session(this, current) : null;
+        boolean show = session != null && session[2] > 0 && Usage.now() < session[0]
+                && !getSystemService(KeyguardManager.class).isKeyguardLocked();
+        if (bar != null && (!show || barEnd != session[0])) {
+            getSystemService(WindowManager.class).removeView(bar);
+            bar = null;
+        }
+        if (!show || bar != null) return;
+        bar = new SessionBar(this, session[2], session[0]);
+        barEnd = session[0];
+        // No FLAG_LAYOUT_IN_SCREEN: the window stays below the status bar, and at the very top once an app hides it.
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.MATCH_PARENT, Math.round(BAR_DP * getResources().getDisplayMetrics().density),
+                WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                PixelFormat.OPAQUE);
+        params.gravity = Gravity.TOP;
+        getSystemService(WindowManager.class).addView(bar, params);
+    }
+
     void recheck() {
         handler.removeCallbacks(recheck);
+        updateBar();
         if (current == null || current.equals(getPackageName())) return;
         Limits.AppLimit limit = Usage.load(this).get(current);
         if (limit == null) return;
@@ -98,9 +158,26 @@ public class BlockService extends AccessibilityService {
     public void onInterrupt() {}
 
     @Override
+    public void onCreate() {
+        super.onCreate();
+        IntentFilter filter = new IntentFilter(Intent.ACTION_SCREEN_OFF);
+        filter.addAction(Intent.ACTION_SCREEN_ON);
+        filter.addAction(Intent.ACTION_USER_PRESENT);
+        registerReceiver(screen, filter);
+    }
+
+    @Override
+    public void onDestroy() {
+        unregisterReceiver(screen);
+        super.onDestroy();
+    }
+
+    @Override
     public boolean onUnbind(Intent intent) {
         handler.removeCallbacks(recheck);
         handler.removeCallbacks(settle);
+        current = null;
+        updateBar();
         return super.onUnbind(intent);
     }
 }
