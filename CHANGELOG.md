@@ -4,7 +4,11 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 
 ## Unveröffentlicht
 
+### Verbessert
+- **Shorts und Reels führen zum Startbildschirm:** Öffnest du gesperrte Shorts oder Reels, landest du jetzt immer auf dem Startbildschirm und Birdy sagt dir deutlich, warum.
+
 ### Behoben
+- **Reels-Sperre griff nicht:** Laufende Instagram-Reels wurden nicht erkannt und ließen sich trotz Sperre weiterschauen. Jetzt verlässt Birdy sie zuverlässig.
 - **Sperrseite kam doppelt:** Beim Öffnen einer gesperrten App erschien die Sperrseite manchmal zweimal kurz hintereinander. Jetzt kommt sie einmal und ruhig.
 - **Sperre über „Zuletzt verwendet“:** Eine gesperrte App ließ sich manchmal über „Zuletzt verwendet“ oder eine Benachrichtigung trotzdem öffnen. Der strenge Modus fängt sie jetzt auch dort ab.
 - **Shorts im Bild-im-Bild-Fenster:** Auch im kleinen Fenster ließen sich gesperrte Shorts weiterschauen. Jetzt schließt Birdy das Fenster.

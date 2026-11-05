@@ -6,11 +6,10 @@ import android.graphics.Rect;
 import android.provider.Settings;
 import android.text.TextUtils;
 
-import java.util.ArrayDeque;
 import java.util.List;
 
 // Endless short-video feeds inside apps: YouTube Shorts and Instagram Reels. FeedService looks at the view ids of
-// the app in front and, when the full-screen player of a blocked feed shows, goes back out of it.
+// the app in front and, when the full-screen player of a blocked feed shows, goes to the home screen.
 // The ids are the apps' own and may change with their updates; then add the new one here.
 final class Feeds {
     static final String YOUTUBE = "com.google.android.youtube", INSTAGRAM = "com.instagram.android";
@@ -81,21 +80,15 @@ final class Feeds {
         return false;
     }
 
-    // What to do on seeing a blocked feed: go back, and if that does not leave it (a feed opened from a link
-    // may sit on top of itself), go home. A short wait lets each step take effect before the next.
+    // A short wait lets the last step out of a blocked feed take effect before acting again.
     static final class Guard {
-        enum Action { NONE, BACK, HOME }
+        static final long SETTLE = 700;
+        private long last = -SETTLE;
 
-        static final long SETTLE = 700, WINDOW = 5_000;
-        private final ArrayDeque<Long> recent = new ArrayDeque<>();
-
-        Action next(long now) {
-            while (!recent.isEmpty() && now - recent.peekFirst() > WINDOW) recent.pollFirst();
-            if (!recent.isEmpty() && now - recent.peekLast() < SETTLE) return Action.NONE;
-            Action a = recent.size() >= 2 ? Action.HOME : Action.BACK;
-            recent.addLast(now);
-            if (a == Action.HOME) recent.clear();
-            return a;
+        boolean settled(long now) {
+            if (now - last < SETTLE) return false;
+            last = now;
+            return true;
         }
     }
 }

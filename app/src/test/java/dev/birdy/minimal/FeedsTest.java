@@ -89,14 +89,11 @@ public class FeedsTest {
     }
 
     @Test
-    public void backFirstThenHomeWhenBackDoesNotLeave() {
+    public void actsOnceThenWaitsForTheStepToSettle() {
         Feeds.Guard g = new Feeds.Guard();
-        assertEquals(Feeds.Guard.Action.BACK, g.next(10_000));
-        assertEquals("waits for Back to take effect", Feeds.Guard.Action.NONE, g.next(10_300));
-        assertEquals(Feeds.Guard.Action.BACK, g.next(10_800));
-        assertEquals("still there after two Backs", Feeds.Guard.Action.HOME, g.next(11_600));
-        assertEquals("starts over after Home", Feeds.Guard.Action.BACK, g.next(12_400));
-        assertEquals("a later visit starts with Back again", Feeds.Guard.Action.BACK, g.next(30_000));
+        assertTrue("acts right away, even just after boot", g.settled(0));
+        assertFalse("waits for the last step to take effect", g.settled(300));
+        assertTrue(g.settled(700));
     }
 
     @Test
