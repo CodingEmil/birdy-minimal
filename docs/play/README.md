@@ -101,7 +101,7 @@ Kategorie: **Personalisierung**. Kontakt-E-Mail (Pflicht, wird öffentlich angez
 
 ## Automatische Uploads aus GitHub (einmal einrichten)
 
-Danach lädt die CI selbst hoch: jeder Push auf `main` geht in den **internen Test**, jedes Tag `v…` in den **geschlossenen Test „Alpha“**. Versionshinweise kommen aus `distribution/whatsnew/whatsnew-de-DE` (max. 500 Zeichen, vor einem Tag kurz anpassen). Solange das Secret fehlt, überspringt die CI diesen Schritt.
+Danach lädt die CI **volle Versionen** (Tag `v1.4`) selbst hoch, standardmäßig in den geschlossenen Test „Alpha“. Betas und Pushes auf `main` gehen nicht zu Google Play. Die Versionshinweise erzeugt die CI aus `CHANGELOG.md`. Ablauf und Einstellungen: [../RELEASING.md](../RELEASING.md). Solange das Secret fehlt, überspringt die CI diesen Schritt.
 
 1. **API einschalten:** [console.cloud.google.com](https://console.cloud.google.com) → oben ein Projekt wählen oder neu anlegen (z. B. „birdy“) → „APIs & Dienste“ → „Bibliothek“ → **Google Play Android Developer API** → „Aktivieren“.
 2. **Dienstkonto anlegen:** „IAM & Verwaltung“ → „Dienstkonten“ → „Dienstkonto erstellen“, Name z. B. `birdy-ci`, keine Rollen nötig → „Fertig“. Das Konto anklicken → „Schlüssel“ → „Schlüssel hinzufügen“ → „Neuen Schlüssel erstellen“ → **JSON**. Die Datei wird heruntergeladen; gut aufbewahren, sie ist ein Passwort.
@@ -112,4 +112,4 @@ Bis neue Berechtigungen bei Google greifen, kann es bis zu einem Tag dauern. Sch
 
 ## Später: Updates
 
-Jeder Build auf GitHub erhöht die Versionsnummer automatisch (`versionCode` = Nummer des CI-Laufs). Mit automatischen Uploads (oben) reicht ein Push bzw. ein Tag; ohne: `birdy.aab` aus dem Lauf laden und in der Console einen neuen Release anlegen.
+Jeder Build auf GitHub erhöht die Versionsnummer automatisch (`versionCode` = Nummer des CI-Laufs). Mit automatischen Uploads (oben) reicht das Tag einer vollen Version; ohne: `birdy.aab` aus dem Lauf laden und in der Console einen neuen Release anlegen.

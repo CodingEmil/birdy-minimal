@@ -1,11 +1,11 @@
 # Changelog
 
-Neue Funktionen kommen sofort unter „Unveröffentlicht“. Vorabversionen (`v1.4-beta.1`, …) zeigen diesen Abschnitt als Beschreibung.
-Beim vollen Release wird die Überschrift zur Versionsnummer (`## 1.4`) und darüber ein neuer, leerer Abschnitt „Unveröffentlicht“ angelegt.
+Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) bekommt ihren eigenen Abschnitt, eine volle Version (`v1.4`) fasst alle ihre Betas zusammen. Ablauf: [docs/RELEASING.md](docs/RELEASING.md).
 
 ## Unveröffentlicht
 
 ### Neu
+- **„Neu in Birdy“ nach einem Update:** Einmal nach jedem Update zeigt Birdy, was sich geändert hat, direkt aus diesem Changelog.
 - **Zeitlimits pro App:** Lange auf eine App drücken → „Zeitlimit…“. Ein Tageslimit (Summe ab Mitternacht) und Schonzeiten morgens und abends (von–bis, abends auch über Mitternacht). Gesperrte Apps zeigen eine Sperrseite statt der App.
 - **Strenger Modus:** Als Bedienungshilfe fängt Birdy gesperrte Apps immer ab, auch wenn sie über Benachrichtigungen, „Zuletzt verwendet“ oder Links geöffnet werden, und unterbricht eine App, sobald ihr Limit aufgebraucht ist oder die Schonzeit beginnt. Braucht die Freigaben „Nutzungsdatenzugriff“ und „Bedienungshilfe“; die Birdy-App und jede Limit-Seite führen dorthin.
 - **Bewusst öffnen:** Apps mit Zeitlimit fragen vor jedem Öffnen „Wie lange möchtest du jetzt hier sein?“ (5, 10, 15 oder 30 Minuten, höchstens so viel wie heute noch übrig ist). Ist die Zeit um, sperrt Birdy die App; danach gilt eine einstellbare Pause zwischen Sessions, unabhängig vom Tageslimit. Pro App abschaltbar.
@@ -31,7 +31,7 @@ Beim vollen Release wird die Überschrift zur Versionsnummer (`## 1.4`) und dar�
 - Nach dem Zurückkehren aus einer App (z. B. mit der Zurück-Geste) war die App-Liste noch offen, statt auf dem Startscreen zu landen.
 
 ### Intern
-- Automatischer Upload zu Google Play aus der CI: `main` → interner Test, Tags `v…` → geschlossener Test „Alpha“, Versionshinweise aus `distribution/whatsnew/`. Aktiv, sobald das Secret `PLAY_SERVICE_ACCOUNT_JSON` gesetzt ist.
+- Release-Ablauf mit Betas: Betas (`v1.4-beta.N`) werden GitHub-Vorabversionen mit eigenem Changelog, volle Versionen (`v1.4`) fassen alle Betas zusammen und gehen automatisch zu Google Play (geschlossener Test „Alpha“, einstellbar). `tools/changelog.py` pflegt den Changelog und erzeugt die Store-Hinweise. Siehe `docs/RELEASING.md`.
 - Vorbereitung für Google Play: Hinweis mit Zustimmung, bevor Birdy zur Bedienungshilfe führt; Datenschutzerklärung (`PRIVACY.md`, verlinkt in der Birdy-App); die CI baut zusätzlich ein App Bundle (AAB); Store-Texte, Grafiken und eine Anleitung für die Play Console unter `docs/play/`.
 - UI-Tests mit Robolectric, die die echte Startscreen-Activity bedienen. Die CI baut mit JDK 21.
 

@@ -229,11 +229,11 @@ public class MainActivity extends Activity {
         else animateTo(false);
     }
 
-    // Limits without the grants they need do nothing; say so once (see Grants.warnOnceFromHome).
+    // After an update: what's new (once). Otherwise: limits without the grants they need do nothing; say so once.
     @Override
     protected void onResume() {
         super.onResume();
-        Grants.warnOnceFromHome(this);
+        if (!WhatsNew.showAfterUpdate(this)) Grants.warnOnceFromHome(this); // one dialog at a time
     }
 
     // Home pressed while already home.
