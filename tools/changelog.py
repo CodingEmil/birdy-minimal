@@ -26,7 +26,7 @@ def split(text):
 def join(preamble, sections):
     out = preamble.rstrip() + "\n\n"
     for heading, body in sections:
-        out += f"## {heading}\n\n{body.strip()}\n\n"
+        out += f"## {heading}\n\n" + (f"{body.strip()}\n\n" if body.strip() else "")
     return out.rstrip() + "\n"
 
 

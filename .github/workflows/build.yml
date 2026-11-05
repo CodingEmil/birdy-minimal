@@ -5,7 +5,18 @@ on:
     branches: [main]
     tags: ["v*"]
   pull_request:
+  # Started by hand: optionally upload this build to a Play track, under a version name.
   workflow_dispatch:
+    inputs:
+      play_track:
+        description: "Google Play track to upload to (empty = no upload)"
+        type: choice
+        options: ["", "internal", "alpha", "production"]
+        default: ""
+      version:
+        description: "Version name for this build, e.g. 1.4-beta.2 (empty = dev)"
+        type: string
+        default: ""
 
 permissions:
   contents: write # to publish releases on tags
@@ -26,6 +37,7 @@ jobs:
 
       - name: Build release APK and Play bundle
         env:
+          BIRDY_VERSION: ${{ inputs.version }}
           KEYSTORE_B64: ${{ secrets.BIRDY_KEYSTORE_B64 }}
           BIRDY_KEYSTORE_PASSWORD: ${{ secrets.BIRDY_KEYSTORE_PASSWORD }}
         run: |
@@ -54,14 +66,21 @@ jobs:
       # Optional repo variable PLAY_BETA_TRACK (e.g. "internal") sends betas to Play as well.
       - name: Decide Play upload
         id: play
-        if: env.HAS_PLAY == 'true' && startsWith(github.ref, 'refs/tags/v')
+        if: env.HAS_PLAY == 'true' && (startsWith(github.ref, 'refs/tags/v') || inputs.play_track != '')
         env:
           FULL_TRACK: ${{ vars.PLAY_TRACK || 'alpha' }}
           BETA_TRACK: ${{ vars.PLAY_BETA_TRACK }}
+          MANUAL_TRACK: ${{ inputs.play_track }}
+          MANUAL_VERSION: ${{ inputs.version }}
         run: |
-          version="${GITHUB_REF_NAME#v}"
-          if [[ "$version" == *-* ]]; then track="$BETA_TRACK"; else track="$FULL_TRACK"; fi
+          if [[ -n "$MANUAL_TRACK" ]]; then
+            track="$MANUAL_TRACK"; version="${MANUAL_VERSION:-dev}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+            if [[ "$version" == *-* ]]; then track="$BETA_TRACK"; else track="$FULL_TRACK"; fi
+          fi
           echo "track=$track" >> "$GITHUB_OUTPUT"
+          echo "name=$version" >> "$GITHUB_OUTPUT"
           mkdir -p distribution/whatsnew
           python3 tools/changelog.py play "$version" > distribution/whatsnew/whatsnew-de-DE
           cat distribution/whatsnew/whatsnew-de-DE
@@ -75,7 +94,7 @@ jobs:
           packageName: birdy.minimal
           releaseFiles: birdy.aab
           track: ${{ steps.play.outputs.track }}
-          releaseName: ${{ github.ref_name }}
+          releaseName: ${{ steps.play.outputs.name }}
           status: completed
           whatsNewDirectory: distribution/whatsnew
 

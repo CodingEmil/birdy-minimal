@@ -5,8 +5,11 @@ plugins {
 // CI signs with the release key from GitHub secrets; local builds without it fall back to the debug key.
 val releaseKeystore: String? = System.getenv("BIRDY_KEYSTORE")
 
-// "v1.2" tag builds become "1.2", "v1.3-beta.1" becomes "1.3-beta.1"; branch and local builds are "dev".
-val appVersion: String = System.getenv("GITHUB_REF_NAME")?.takeIf { System.getenv("GITHUB_REF_TYPE") == "tag" }?.removePrefix("v") ?: "dev"
+// "v1.2" tag builds become "1.2", "v1.3-beta.1" becomes "1.3-beta.1"; a build started by hand may name its
+// version (BIRDY_VERSION); branch and local builds are "dev".
+val appVersion: String = System.getenv("BIRDY_VERSION")?.takeIf { it.isNotBlank() }
+    ?: System.getenv("GITHUB_REF_NAME")?.takeIf { System.getenv("GITHUB_REF_TYPE") == "tag" }?.removePrefix("v")
+    ?: "dev"
 
 android {
     namespace = "dev.birdy.minimal"

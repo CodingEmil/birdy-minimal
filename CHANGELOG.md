@@ -4,6 +4,8 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 
 ## Unveröffentlicht
 
+## 1.4-beta.2
+
 ### Neu
 - **„Neu in Birdy“ nach einem Update:** Einmal nach jedem Update zeigt Birdy, was sich geändert hat, direkt aus diesem Changelog.
 - **Zeitlimits pro App:** Lange auf eine App drücken → „Zeitlimit…“. Ein Tageslimit (Summe ab Mitternacht) und Schonzeiten morgens und abends (von–bis, abends auch über Mitternacht). Gesperrte Apps zeigen eine Sperrseite statt der App.
