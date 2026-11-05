@@ -30,6 +30,17 @@ public class SetupActivity extends Activity {
         opens(R.id.setup_help, HelpActivity.class);
         findViewById(R.id.privacy).setOnClickListener(v ->
                 Grants.open(this, new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(Grants.PRIVACY_URL))));
+        bindWhatsNew();
+    }
+
+    // "Versionshinweise" opens the popup from after an update again; dev builds have no notes, so only the version.
+    private void bindWhatsNew() {
+        boolean notes = WhatsNew.hasNotes(this);
+        View row = findViewById(R.id.whatsnew);
+        row.setVisibility(notes ? View.VISIBLE : View.GONE);
+        row.setOnClickListener(v -> WhatsNew.show(this));
+        ((TextView) findViewById(R.id.version)).setText(
+                "Version " + WhatsNew.versionName(this) + (notes ? " · was sich mit diesem Update geändert hat." : ""));
     }
 
     private void opens(int id, Class<? extends Activity> page) {

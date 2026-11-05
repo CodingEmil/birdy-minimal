@@ -125,6 +125,15 @@
             style="@style/Birdy.Hint"
             android:text="Birdy sammelt nichts und sendet nichts. Alle Einstellungen und Zeiten bleiben auf diesem Gerät." />
 
+        <TextView
+            android:id="@+id/whatsnew"
+            style="@style/Birdy.Link"
+            android:text="Versionshinweise  →" />
+
+        <TextView
+            android:id="@+id/version"
+            style="@style/Birdy.Hint" />
+
         <Space
             android:layout_width="0dp"
             android:layout_height="0dp"

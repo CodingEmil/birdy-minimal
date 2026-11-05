@@ -10,6 +10,7 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 
 ### Verbessert
 - **Aufgeräumte Einstellungen:** Die Birdy-App zeigt nur noch eine kurze Übersicht. Startbildschirm, Apps & Suche, Zeitlimits, Shorts & Reels und die Bedienung haben jeweils eine eigene Seite.
+- **Versionshinweise jederzeit:** Ganz unten in der Birdy-App öffnet „Versionshinweise“ das Popup mit den Neuerungen noch einmal.
 
 ## 1.4-beta.4
 

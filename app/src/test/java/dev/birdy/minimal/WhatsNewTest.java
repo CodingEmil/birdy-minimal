@@ -132,4 +132,26 @@ public class WhatsNewTest {
         Robolectric.buildActivity(MainActivity.class).setup();
         assertTrue(shadowOf(dialog()).getTitle().toString().startsWith("Achtung"));
     }
+
+    @Test
+    public void versionNotesOpenAgainFromTheBirdyApp() {
+        version("1.4", 40, true);
+        prefs.edit().putLong(WhatsNew.SEEN, 40).commit(); // already seen after the update
+        SetupActivity setup = org.robolectric.Robolectric.buildActivity(SetupActivity.class).setup().get();
+        assertEquals("Version 1.4 · was sich mit diesem Update geändert hat.",
+                ((android.widget.TextView) setup.findViewById(R.id.version)).getText().toString());
+        setup.findViewById(R.id.whatsnew).performClick();
+        assertEquals("Neu in Birdy 1.4", shadowOf(dialog()).getTitle().toString());
+        assertTrue(texts(dialog()).contains("Neu"));
+        assertEquals("seen stays as it was", 40, prefs.getLong(WhatsNew.SEEN, -1));
+    }
+
+    @Test
+    public void withoutNotesOnlyTheVersionShows() {
+        version("dev", 1, false);
+        WhatsNew.source = context -> "";
+        SetupActivity setup = org.robolectric.Robolectric.buildActivity(SetupActivity.class).setup().get();
+        assertEquals(android.view.View.GONE, setup.findViewById(R.id.whatsnew).getVisibility());
+        assertEquals("Version dev", ((android.widget.TextView) setup.findViewById(R.id.version)).getText().toString());
+    }
 }

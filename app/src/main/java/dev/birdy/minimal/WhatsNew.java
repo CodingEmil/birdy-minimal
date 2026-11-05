@@ -70,14 +70,32 @@ final class WhatsNew {
         if (seen >= code) return false;
         prefs.edit().putLong(SEEN, code).apply();
         boolean updated = seen >= 0 || info.lastUpdateTime > info.firstInstallTime; // also updates from before this popup existed
+        if (!updated || "dev".equals(info.versionName)) return false;
+        return show(activity);
+    }
+
+    // The same popup on demand, from "Versionshinweise" in the Birdy app. False when this build has no notes (dev).
+    static boolean show(Activity activity) {
         List<Section> sections = parse(source.text(activity));
-        if (!updated || sections.isEmpty() || "dev".equals(info.versionName)) return false;
+        if (sections.isEmpty()) return false;
         new AlertDialog.Builder(activity)
-                .setTitle("Neu in Birdy " + info.versionName)
+                .setTitle("Neu in Birdy " + versionName(activity))
                 .setView(content(activity, sections))
                 .setPositiveButton("Schön", null)
                 .show();
         return true;
+    }
+
+    static boolean hasNotes(Context context) {
+        return !parse(source.text(context)).isEmpty();
+    }
+
+    static String versionName(Context context) {
+        try {
+            return context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            return "";
+        }
     }
 
     // "### Name" starts a section, "- " a bullet, other lines continue the bullet before. "**Titel:** Text" splits
