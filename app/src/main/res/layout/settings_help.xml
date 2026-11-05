@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Help page: the gestures and long presses of the home screen. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="32dp"
+        android:paddingTop="56dp"
+        android:paddingBottom="24dp">
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:layout_marginTop="0dp"
+            android:text="Einstellungen" />
+
+        <TextView
+            style="@style/Birdy.PageTitle"
+            android:text="Bedienung" />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:layout_marginTop="16dp"
+            android:text="Birdy hat keine Knöpfe. Alles geht mit Wischen und langem Drücken."
+            android:textColor="#B3B3B3" />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="Wischen" />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:text="Hochwischen öffnet alle Apps." />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:text="Herunterwischen öffnet die Benachrichtigungen." />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:text="Von der oberen Kante wischen zeigt kurz Uhrzeit, Empfang und Akku." />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="Lange drücken" />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:text="Auf eine App: auf den Startscreen, unten links oder rechts in die Ecke, zu einer Gruppe hinzufügen oder ein Zeitlimit setzen." />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:text="Auf eine Gruppe: Apps auswählen und anordnen, umbenennen oder löschen. Tippen klappt sie auf." />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="Gruppen" />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:text="Lange auf eine App drücken, dann „Zu Gruppe hinzufügen…“. Eine neue Gruppe landet auf dem Startscreen." />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="Zurück" />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:text="Willst du deinen alten Startbildschirm zurück, wechselst du in der Birdy-App mit „Launcher wechseln“." />
+
+    </LinearLayout>
+</ScrollView>

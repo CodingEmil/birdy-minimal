@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings page: what the home screen shows and how it reacts. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="32dp"
+        android:paddingTop="56dp"
+        android:paddingBottom="24dp">
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:layout_marginTop="0dp"
+            android:text="Einstellungen" />
+
+        <TextView
+            style="@style/Birdy.PageTitle"
+            android:text="Startbildschirm" />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:layout_marginTop="16dp"
+            android:text="Was der Startbildschirm zeigt und was Wischen dort macht."
+            android:textColor="#B3B3B3" />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="Anzeige" />
+
+        <Switch
+            android:id="@+id/weather"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Temperatur neben dem Datum" />
+
+        <TextView
+            android:id="@+id/weather_hint"
+            style="@style/Birdy.Hint"
+            android:text="Birdy liest die Temperatur aus dem Widget deiner Wetter-App, ohne Internet und ohne Standort. Antippen öffnet die Wetter-App." />
+
+        <TextView
+            android:id="@+id/black_wallpaper"
+            style="@style/Birdy.Link"
+            android:text="Hintergrund schwarz machen  →" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Die App-Übersicht kommt vom System und zeigt dessen Hintergrundbild. In Schwarz geht sie nahtlos in Birdy über. Der Sperrbildschirm bleibt, wie er ist." />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="Gesten" />
+
+        <Switch
+            android:id="@+id/shade"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Herunterwischen für Benachrichtigungen" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Auf dem Startscreen nach unten wischen öffnet die Benachrichtigungen, wie beim Wischen vom oberen Rand." />
+
+    </LinearLayout>
+</ScrollView>

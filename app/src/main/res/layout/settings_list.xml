@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings page: order of the app list and what the search finds. -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:fitsSystemWindows="true"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="32dp"
+        android:paddingTop="56dp"
+        android:paddingBottom="24dp">
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:layout_marginTop="0dp"
+            android:text="Einstellungen" />
+
+        <TextView
+            style="@style/Birdy.PageTitle"
+            android:text="Apps &amp; Suche" />
+
+        <TextView
+            style="@style/Birdy.Line"
+            android:layout_marginTop="16dp"
+            android:text="Wie die App-Liste sortiert ist und was die Suche findet."
+            android:textColor="#B3B3B3" />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="App-Liste" />
+
+        <Switch
+            android:id="@+id/top_apps"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Oft genutzte Apps oben" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Zeigt über allen Apps die 5, die du in den letzten 3 Tagen am häufigsten über Birdy geöffnet hast. Gezählt wird nur, solange das an ist, und nur auf diesem Gerät." />
+
+        <Switch
+            android:id="@+id/newest"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Neu installierte Apps zuerst" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Sortiert die Liste nach Installationsdatum statt alphabetisch." />
+
+        <TextView
+            style="@style/Birdy.Eyebrow"
+            android:text="Suche" />
+
+        <Switch
+            android:id="@+id/type"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Beim Hochwischen gleich tippen" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Öffnet mit der App-Liste direkt die Tastatur, sodass du sofort suchen kannst." />
+
+        <Switch
+            android:id="@+id/bottom"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Suchtreffer unten" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Treffer stehen beim Suchen unten über dem Suchfeld, der beste ganz unten. So erreichst du sie gut mit dem Daumen." />
+
+        <Switch
+            android:id="@+id/contacts"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Kontakte in der Suche" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Beim Suchen erscheinen passende Kontakte, auf der anderen Seite als die Apps. Antippen öffnet den Kontakt. Braucht Zugriff auf deine Kontakte; Birdy liest sie nur auf dem Gerät und speichert nichts." />
+
+        <Switch
+            android:id="@+id/web"
+            style="@style/Birdy.Line"
+            android:minHeight="48dp"
+            android:text="Websuche, wenn nichts passt" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Findet die Suche weder App noch Kontakt, sucht Enter den Begriff in Chrome, ohne Chrome im Standardbrowser." />
+
+    </LinearLayout>
+</ScrollView>

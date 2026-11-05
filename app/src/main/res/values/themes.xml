@@ -53,6 +53,25 @@
         <item name="android:textSize">14sp</item>
     </style>
 
+    <!-- Settings sub-pages: big thin page name under the "Einstellungen" eyebrow. -->
+    <style name="Birdy.PageTitle" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">-2dp</item>
+        <item name="android:fontVariationSettings">"'wght' 250"</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">48sp</item>
+    </style>
+
+    <!-- A row that opens something: white, dims while pressed, ends with an arrow in its text. -->
+    <style name="Birdy.Link" parent="Birdy.Line">
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:textColor">@color/item_text</item>
+    </style>
+
     <!-- Time limit screens (asking how long, blocked): clock badge, big thin app name, white button at the bottom. -->
     <style name="Birdy.Badge" parent="">
         <item name="android:layout_width">56dp</item>

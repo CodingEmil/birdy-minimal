@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- The Birdy app: whether Birdy is the home app, then one row per settings page. -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:scrollbars="none">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -27,235 +29,97 @@
             android:textColor="@android:color/white"
             android:textSize="64sp" />
 
-        <TextView
-            style="@style/Birdy.Line"
-            android:layout_marginTop="16dp"
-            android:text="Birdy ist ein Launcher: Er ersetzt deinen Startbildschirm. Deshalb stellst du ihn in den Einstellungen als Startbildschirm-App ein."
-            android:textColor="#B3B3B3" />
+        <!-- Only until Birdy is the home app. -->
+        <LinearLayout
+            android:id="@+id/onboarding"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-        <TextView
-            style="@style/Birdy.Eyebrow"
-            android:text="So wechselst du" />
+            <TextView
+                style="@style/Birdy.Line"
+                android:layout_marginTop="16dp"
+                android:text="Birdy ist ein Launcher: Er ersetzt deinen Startbildschirm. Deshalb stellst du ihn in den Einstellungen als Startbildschirm-App ein."
+                android:textColor="#B3B3B3" />
 
-        <TextView
-            style="@style/Birdy.Line"
-            android:text="1.  Tippe unten auf den Button." />
+            <TextView
+                style="@style/Birdy.Eyebrow"
+                android:text="So wechselst du" />
 
-        <TextView
-            style="@style/Birdy.Line"
-            android:text="2.  Wähle Birdy als Startbildschirm-App." />
+            <TextView
+                style="@style/Birdy.Line"
+                android:text="1.  Tippe unten auf den Button." />
 
-        <TextView
-            style="@style/Birdy.Line"
-            android:text="3.  Drück die Home-Taste. Fertig." />
+            <TextView
+                style="@style/Birdy.Line"
+                android:text="2.  Wähle Birdy als Startbildschirm-App." />
 
-        <TextView
-            style="@style/Birdy.Eyebrow"
-            android:text="So bedienst du Birdy" />
-
-        <TextView
-            style="@style/Birdy.Line"
-            android:text="Hochwischen öffnet alle Apps, Herunterwischen die Benachrichtigungen." />
-
-        <TextView
-            style="@style/Birdy.Line"
-            android:text="Lange drücken heftet eine App an oder legt sie unten in eine Ecke." />
-
-        <TextView
-            style="@style/Birdy.Line"
-            android:text="Gruppen: lange auf eine App drücken, dann „Zu Gruppe hinzufügen“. Tippen klappt eine Gruppe auf, lange drücken bearbeitet sie." />
-
-        <TextView
-            style="@style/Birdy.Line"
-            android:text="Zurückwechseln geht jederzeit hier." />
+            <TextView
+                style="@style/Birdy.Line"
+                android:text="3.  Drück die Home-Taste. Fertig." />
+        </LinearLayout>
 
         <TextView
             style="@style/Birdy.Eyebrow"
             android:text="Einstellungen" />
 
-        <Switch
-            android:id="@+id/top_apps"
-            style="@style/Birdy.Line"
-            android:minHeight="48dp"
-            android:text="Oft genutzte Apps oben" />
+        <TextView
+            android:id="@+id/setup_home"
+            style="@style/Birdy.Link"
+            android:text="Startbildschirm  →" />
 
         <TextView
             style="@style/Birdy.Hint"
-            android:text="Zeigt über allen Apps die 5, die du in den letzten 3 Tagen am häufigsten über Birdy geöffnet hast. Gezählt wird nur, solange das an ist, und nur auf diesem Gerät." />
+            android:text="Temperatur, Hintergrund und Herunterwischen." />
 
-        <Switch
-            android:id="@+id/newest"
-            style="@style/Birdy.Line"
-            android:minHeight="48dp"
-            android:text="Neu installierte Apps zuerst" />
+        <TextView
+            android:id="@+id/setup_list"
+            style="@style/Birdy.Link"
+            android:text="Apps &amp; Suche  →" />
 
         <TextView
             style="@style/Birdy.Hint"
-            android:text="Sortiert die Liste nach Installationsdatum statt alphabetisch." />
-
-        <Switch
-            android:id="@+id/type"
-            style="@style/Birdy.Line"
-            android:minHeight="48dp"
-            android:text="Beim Hochwischen gleich tippen" />
+            android:text="Sortierung der App-Liste, Tastatur, Kontakte und Websuche." />
 
         <TextView
-            style="@style/Birdy.Hint"
-            android:text="Öffnet mit der App-Liste direkt die Tastatur, sodass du sofort suchen kannst." />
-
-        <Switch
-            android:id="@+id/bottom"
-            style="@style/Birdy.Line"
-            android:minHeight="48dp"
-            android:text="Suchtreffer unten" />
-
-        <TextView
-            style="@style/Birdy.Hint"
-            android:text="Treffer stehen beim Suchen unten über dem Suchfeld, der beste ganz unten. So erreichst du sie gut mit dem Daumen." />
-
-        <Switch
-            android:id="@+id/weather"
-            style="@style/Birdy.Line"
-            android:minHeight="48dp"
-            android:text="Temperatur neben dem Datum" />
-
-        <TextView
-            android:id="@+id/weather_hint"
-            style="@style/Birdy.Hint"
-            android:text="Birdy liest die Temperatur aus dem Widget deiner Wetter-App, ohne Internet und ohne Standort. Antippen öffnet die Wetter-App." />
-
-        <Switch
-            android:id="@+id/contacts"
-            style="@style/Birdy.Line"
-            android:minHeight="48dp"
-            android:text="Kontakte in der Suche" />
-
-        <TextView
-            style="@style/Birdy.Hint"
-            android:text="Beim Suchen erscheinen passende Kontakte, auf der anderen Seite als die Apps. Antippen öffnet den Kontakt. Braucht Zugriff auf deine Kontakte; Birdy liest sie nur auf dem Gerät und speichert nichts." />
-
-        <Switch
-            android:id="@+id/web"
-            style="@style/Birdy.Line"
-            android:minHeight="48dp"
-            android:text="Websuche, wenn nichts passt" />
-
-        <TextView
-            style="@style/Birdy.Hint"
-            android:text="Findet die Suche weder App noch Kontakt, sucht Enter den Begriff in Chrome, ohne Chrome im Standardbrowser." />
-
-        <Switch
-            android:id="@+id/shade"
-            style="@style/Birdy.Line"
-            android:minHeight="48dp"
-            android:text="Herunterwischen für Benachrichtigungen" />
-
-        <TextView
-            style="@style/Birdy.Hint"
-            android:text="Auf dem Startscreen nach unten wischen öffnet die Benachrichtigungen, wie beim Wischen vom oberen Rand." />
+            style="@style/Birdy.Eyebrow"
+            android:text="Weniger am Handy" />
 
         <TextView
             android:id="@+id/setup_limits"
-            style="@style/Birdy.Line"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:minHeight="48dp"
-            android:text="Zeitlimits  →"
-            android:textColor="@color/item_text" />
+            style="@style/Birdy.Link"
+            android:text="Zeitlimits  →" />
 
         <TextView
             android:id="@+id/setup_limits_summary"
             style="@style/Birdy.Hint" />
 
         <TextView
-            style="@style/Birdy.Eyebrow"
-            android:text="Shorts &amp; Reels" />
-
-        <Switch
-            android:id="@+id/block_shorts"
-            style="@style/Birdy.Line"
-            android:minHeight="48dp"
-            android:text="YouTube Shorts sperren" />
+            android:id="@+id/setup_feeds"
+            style="@style/Birdy.Link"
+            android:text="Shorts &amp; Reels  →" />
 
         <TextView
-            android:id="@+id/allow_shorts"
-            style="@style/Birdy.Line"
-            android:layout_marginTop="0dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:minHeight="48dp"
-            android:textColor="@color/item_text_dim"
-            android:visibility="gone" />
-
-        <Switch
-            android:id="@+id/block_reels"
-            style="@style/Birdy.Line"
-            android:minHeight="48dp"
-            android:text="Instagram Reels sperren" />
-
-        <TextView
-            android:id="@+id/allow_reels"
-            style="@style/Birdy.Line"
-            android:layout_marginTop="0dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:minHeight="48dp"
-            android:textColor="@color/item_text_dim"
-            android:visibility="gone" />
-
-        <TextView
-            style="@style/Birdy.Hint"
-            android:text="YouTube und Instagram bleiben nutzbar. Öffnest du Shorts oder Reels, geht Birdy zurück: sofort oder wenn deine Zeit für heute um ist. Braucht die Bedienungshilfe „Birdy Shorts &amp; Reels“." />
-
-        <TextView
-            android:id="@+id/feeds_setup"
-            style="@style/Birdy.Line"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:minHeight="48dp"
-            android:text="Bedienungshilfe einschalten  →"
-            android:textColor="@color/item_text"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/feeds_setup_hint"
-            style="@style/Birdy.Hint"
-            android:text="Noch aus: Ohne sie sperrt Birdy weder Shorts noch Reels."
-            android:visibility="gone" />
+            android:id="@+id/setup_feeds_summary"
+            style="@style/Birdy.Hint" />
 
         <TextView
             style="@style/Birdy.Eyebrow"
-            android:text="Aussehen" />
+            android:text="Hilfe" />
 
         <TextView
-            android:id="@+id/black_wallpaper"
-            style="@style/Birdy.Line"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:minHeight="48dp"
-            android:text="Hintergrund schwarz machen  →"
-            android:textColor="@color/item_text" />
+            android:id="@+id/setup_help"
+            style="@style/Birdy.Link"
+            android:text="Bedienung  →" />
 
         <TextView
             style="@style/Birdy.Hint"
-            android:text="Die App-Übersicht kommt vom System und zeigt dessen Hintergrundbild. In Schwarz geht sie nahtlos in Birdy über. Der Sperrbildschirm bleibt, wie er ist." />
-
+            android:text="Wischen, lange drücken und Gruppen." />
 
         <TextView
             android:id="@+id/privacy"
-            style="@style/Birdy.Line"
-            android:layout_marginTop="32dp"
-            android:clickable="true"
-            android:focusable="true"
-            android:gravity="center_vertical"
-            android:minHeight="48dp"
-            android:text="Datenschutz  →"
-            android:textColor="@color/item_text" />
+            style="@style/Birdy.Link"
+            android:text="Datenschutz  →" />
 
         <TextView
             style="@style/Birdy.Hint"
@@ -269,13 +133,6 @@
 
         <Button
             android:id="@+id/action"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:background="@drawable/button"
-            android:fontVariationSettings="'wght' 500"
-            android:stateListAnimator="@null"
-            android:textAllCaps="false"
-            android:textColor="@android:color/black"
-            android:textSize="17sp" />
+            style="@style/Birdy.Button" />
     </LinearLayout>
 </ScrollView>

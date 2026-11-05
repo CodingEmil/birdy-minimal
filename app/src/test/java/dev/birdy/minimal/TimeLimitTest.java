@@ -129,7 +129,7 @@ public class TimeLimitTest {
     }
 
     // Writes a PNG when run with -Dshots.dir=...; otherwise does nothing.
-    private static void shot(android.app.Activity a, String name) throws Exception {
+    static void shot(android.app.Activity a, String name) throws Exception {
         if (System.getProperty("shots.dir") == null) return;
         android.view.View root = a.getWindow().getDecorView();
         for (int id : new int[] {R.id.block_content, R.id.session_content}) { // show the end of the fade-in

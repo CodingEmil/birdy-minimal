@@ -1016,7 +1016,7 @@ public class MainActivityTest {
 
     @Test
     public void contactsSettingAsksForPermissionFirst() throws Exception {
-        SetupActivity setup = Robolectric.buildActivity(SetupActivity.class).setup().get();
+        ListSettingsActivity setup = Robolectric.buildActivity(ListSettingsActivity.class).setup().get();
         android.widget.Switch sw = setup.findViewById(R.id.contacts);
         assertFalse(sw.isChecked());
         sw.setChecked(true);

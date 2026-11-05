@@ -74,6 +74,20 @@
             </intent-filter>
         </activity>
 
+        <!-- Settings pages opened from the Birdy app. -->
+        <activity
+            android:name=".HomeSettingsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ListSettingsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".FeedsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".HelpActivity"
+            android:exported="false" />
+
         <!-- Time limits settings page: all apps with limits and strict mode. -->
         <activity
             android:name=".LimitsActivity"
