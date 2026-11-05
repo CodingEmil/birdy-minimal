@@ -36,6 +36,8 @@ import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.view.animation.PathInterpolator;
 import android.view.inputmethod.InputMethodManager;
@@ -126,6 +128,7 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         setContentView(R.layout.main);
+        hideStatusBar();
         launcherApps = getSystemService(LauncherApps.class);
         prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         collator = Collator.getInstance(); // locale-aware, so Ä/Ö/Ü sort next to A/O/U
@@ -334,6 +337,27 @@ public class MainActivity extends Activity {
         cancel.setAction(MotionEvent.ACTION_CANCEL);
         super.dispatchTouchEvent(cancel);
         cancel.recycle();
+    }
+
+    // Home stays empty at the top: no clock, no icons. A swipe from the top edge shows the bar for a moment, over the screen.
+    @SuppressWarnings("deprecation")
+    private void hideStatusBar() {
+        if (Build.VERSION.SDK_INT >= 30) {
+            WindowInsetsController bars = getWindow().getInsetsController();
+            if (bars == null) return;
+            bars.hide(WindowInsets.Type.statusBars());
+            bars.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+        } else {
+            getWindow().getDecorView().setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
+    }
+
+    // Dialogs, the shade or a returning app can bring the bar back; hide it again once home has focus.
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) hideStatusBar();
     }
 
     // Not public API, but what launchers use; needs EXPAND_STATUS_BAR, which is granted at install without a prompt.
