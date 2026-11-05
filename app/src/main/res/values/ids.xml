@@ -2,4 +2,9 @@
 <resources>
     <!-- Name field in the group dialogs (built in code). -->
     <item name="group_name" type="id" />
+    <!-- Search field and list in the app picker of the time limits page. -->
+    <item name="app_search" type="id" />
+    <item name="app_list" type="id" />
+    <!-- "Fertig" row while arranging the home screen. -->
+    <item name="arrange_done" type="id" />
 </resources>

@@ -77,6 +77,7 @@ public class MainActivity extends Activity {
     private Groups groups;
     private String openGroup; // id of the group unfolded on the home screen, or null
     private View openFirst, openLast; // its header and last row, to scroll them into view
+    private boolean arranging; // home shows up/down arrows next to each entry
     private final List<App> all = new ArrayList<>(); // in list order; the adapter shows these or the search matches
     private App bestMatch; // what Enter opens and the list highlights: the first search match; null when not searching
     private ArrayAdapter<App> adapter;
@@ -215,7 +216,8 @@ public class MainActivity extends Activity {
 
     // Back folds an open group first, then closes the app list.
     private void back() {
-        if (!drawerOpen && progress == 0 && openGroup != null) closeGroup();
+        if (!drawerOpen && progress == 0 && arranging) stopArranging();
+        else if (!drawerOpen && progress == 0 && openGroup != null) closeGroup();
         else animateTo(false);
     }
 
@@ -230,6 +232,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        stopArranging();
         closeGroup();
         animateTo(false);
     }
@@ -242,6 +245,7 @@ public class MainActivity extends Activity {
         drawerOpen = false;
         hideKeyboard();
         setDrawerProgress(0);
+        stopArranging();
         closeGroup();
     }
 
@@ -343,7 +347,10 @@ public class MainActivity extends Activity {
             list.setSelection(0);
         }
         progress = p;
-        if (p == 1) closeGroup(); // hidden behind the list now; fold it so home is tidy on return
+        if (p == 1) { // hidden behind the list now; tidy home for the return
+            closeGroup();
+            stopArranging();
+        }
         drawer.setVisibility(p > 0 ? View.VISIBLE : View.INVISIBLE);
         drawer.setAlpha(Math.max(0, (p - 0.3f) / 0.7f));
         drawer.setTranslationY((1 - p) * 72 * density);
@@ -412,7 +419,8 @@ public class MainActivity extends Activity {
     private void renderHome() {
         favoritesView.removeAllViews();
         openFirst = openLast = null;
-        for (String key : favorites) {
+        if (arranging) renderArranging();
+        else for (String key : favorites) {
             if (Groups.isKey(key)) {
                 Groups.Group group = groups.get(Groups.idOf(key));
                 if (group == null) continue;
@@ -449,17 +457,92 @@ public class MainActivity extends Activity {
     private TextView groupRow(Groups.Group group) {
         List<App> members = members(group);
         TextView row = (TextView) getLayoutInflater().inflate(R.layout.item, favoritesView, false);
-        SpannableStringBuilder text = new SpannableStringBuilder(group.name).append("  ");
-        int start = text.length();
-        text.append(String.valueOf(members.size()));
-        text.setSpan(new ForegroundColorSpan(0xFF6B6B6B), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        text.setSpan(new RelativeSizeSpan(0.6f), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        row.setText(text);
+        row.setText(groupText(group));
         row.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
         row.setContentDescription("Gruppe " + group.name + ", " + members.size() + " Apps");
         row.setOnClickListener(v -> toggleGroup(group));
         row.setOnLongClickListener(v -> { showGroupMenu(v, group); return true; });
         return row;
+    }
+
+    private CharSequence groupText(Groups.Group group) {
+        SpannableStringBuilder text = new SpannableStringBuilder(group.name).append("  ");
+        int start = text.length();
+        text.append(String.valueOf(members(group).size()));
+        text.setSpan(new ForegroundColorSpan(0xFF6B6B6B), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        text.setSpan(new RelativeSizeSpan(0.6f), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return text;
+    }
+
+    // --- Arranging the home screen: each entry gets up and down arrows; "Fertig" or Back ends it. ---
+
+    // Favorites entries that show on home (installed apps and existing groups), in order.
+    private List<String> homeKeys() {
+        List<String> keys = new ArrayList<>();
+        for (String key : favorites) {
+            if (Groups.isKey(key) ? groups.get(Groups.idOf(key)) != null : apps.containsKey(key)) keys.add(key);
+        }
+        return keys;
+    }
+
+    private void startArranging() {
+        openGroup = null;
+        arranging = true;
+        if (drawerOpen) animateTo(false);
+        renderHome();
+    }
+
+    private void stopArranging() {
+        if (!arranging) return;
+        arranging = false;
+        renderHome();
+    }
+
+    private void renderArranging() {
+        List<String> keys = homeKeys();
+        int arrow = Math.round(48 * density), end = Math.round(16 * density);
+        for (int i = 0; i < keys.size(); i++) {
+            String key = keys.get(i);
+            LinearLayout row = new LinearLayout(this);
+            row.setGravity(android.view.Gravity.CENTER_VERTICAL);
+            row.setPaddingRelative(0, 0, end, 0);
+            TextView label = (TextView) getLayoutInflater().inflate(R.layout.item, row, false);
+            label.setText(Groups.isKey(key) ? groupText(groups.get(Groups.idOf(key))) : apps.get(key).label);
+            label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
+            label.setPaddingRelative(label.getPaddingStart(), label.getPaddingTop(), 0, label.getPaddingBottom());
+            row.addView(label, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            row.addView(arrowButton(R.drawable.ic_up, "Nach oben", i > 0, () -> move(key, -1)), new LinearLayout.LayoutParams(arrow, arrow));
+            row.addView(arrowButton(R.drawable.ic_down, "Nach unten", i < keys.size() - 1, () -> move(key, 1)), new LinearLayout.LayoutParams(arrow, arrow));
+            favoritesView.addView(row);
+        }
+        TextView done = (TextView) getLayoutInflater().inflate(R.layout.item, favoritesView, false);
+        done.setId(R.id.arrange_done);
+        done.setText("Fertig");
+        done.setFontVariationSettings("'wght' 500");
+        done.setOnClickListener(v -> stopArranging());
+        favoritesView.addView(done);
+    }
+
+    private ImageView arrowButton(int icon, String description, boolean enabled, Runnable action) {
+        ImageView b = new ImageView(this);
+        b.setImageResource(icon);
+        b.setColorFilter(0xFFB3B3B3, PorterDuff.Mode.SRC_IN);
+        int pad = Math.round(12 * density);
+        b.setPadding(pad, pad, pad, pad);
+        b.setContentDescription(description);
+        b.setEnabled(enabled);
+        b.setAlpha(enabled ? 1f : 0.2f);
+        if (enabled) b.setOnClickListener(v -> action.run());
+        return b;
+    }
+
+    // Swaps the entry with its visible neighbour; uninstalled pins in between keep their place.
+    private void move(String key, int direction) {
+        List<String> keys = homeKeys();
+        int i = keys.indexOf(key), j = i + direction;
+        if (i < 0 || j < 0 || j >= keys.size()) return;
+        Collections.swap(favorites, favorites.indexOf(key), favorites.indexOf(keys.get(j)));
+        saveHome();
     }
 
     // Indented and smaller under the group header, alphabetical.
@@ -581,6 +664,7 @@ public class MainActivity extends Activity {
         menu.add(0, 1, 0, pinned ? "Vom Startscreen entfernen" : "Auf den Startscreen")
                 .setEnabled(pinned || homeEntries() < MAX_FAVORITES);
         menu.add(0, 6, 0, "Zu Gruppe hinzufügen…");
+        if (pinned && homeEntries() > 1) menu.add(0, 9, 0, "Startscreen anordnen");
         menu.add(0, 2, 0, isLeft ? "Unten links entfernen" : "Unten links");
         menu.add(0, 3, 0, isRight ? "Unten rechts entfernen" : "Unten rechts");
         menu.add(0, 8, 0, "Zeitlimit…");
@@ -602,6 +686,9 @@ public class MainActivity extends Activity {
                 case 8:
                     LimitActivity.open(this, app.info.getComponentName().getPackageName(), app.label);
                     break;
+                case 9:
+                    startArranging();
+                    return true;
                 case 2:
                     prefs.edit().putString("left", isLeft ? "" : app.key).apply();
                     break;
@@ -628,11 +715,13 @@ public class MainActivity extends Activity {
         menu.add(0, 1, 0, "Apps auswählen…");
         menu.add(0, 2, 0, "Umbenennen");
         menu.add(0, 3, 0, "Gruppe löschen");
+        if (homeEntries() > 1) menu.add(0, 4, 0, "Startscreen anordnen");
         popup.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case 1: selectApps(group); break;
                 case 2: askName("Gruppe umbenennen", group.name, "Speichern", name -> { group.name = name; saveHome(); }); break;
                 case 3: confirmDelete(group); break;
+                case 4: startArranging(); break;
             }
             return true;
         });

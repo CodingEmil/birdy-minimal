@@ -7,7 +7,16 @@ import android.content.pm.LauncherApps;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Process;
+import android.text.Editable;
+import android.text.InputType;
+import android.text.TextWatcher;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
+import android.widget.ArrayAdapter;
+import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -63,7 +72,8 @@ public class LimitsActivity extends Activity {
         findViewById(R.id.limits_empty).setVisibility(list.getChildCount() == 0 ? View.VISIBLE : View.GONE);
     }
 
-    // All apps with a launcher entry, alphabetical, except Birdy itself.
+    // All apps with a launcher entry, alphabetical, except Birdy itself; a search field on top narrows them,
+    // names starting with the query first (as in the app list), and Enter takes the first.
     private void pickApp() {
         Map<String, String> byPkg = new LinkedHashMap<>();
         for (LauncherActivityInfo info : getSystemService(LauncherApps.class).getActivityList(null, Process.myUserHandle())) {
@@ -73,12 +83,76 @@ public class LimitsActivity extends Activity {
         List<Map.Entry<String, String>> apps = new ArrayList<>(byPkg.entrySet());
         Collator collator = Collator.getInstance();
         apps.sort((a, b) -> collator.compare(a.getValue(), b.getValue()));
-        String[] labels = new String[apps.size()];
-        for (int i = 0; i < apps.size(); i++) labels[i] = apps.get(i).getValue();
-        new AlertDialog.Builder(this)
+
+        float density = getResources().getDisplayMetrics().density;
+        int pad = Math.round(24 * density);
+        EditText search = new EditText(this);
+        search.setId(R.id.app_search);
+        search.setHint("App suchen");
+        search.setSingleLine(true);
+        search.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        search.setImeOptions(EditorInfo.IME_ACTION_GO);
+        search.setTextColor(0xFFFFFFFF);
+        search.setHintTextColor(0xFF6B6B6B);
+
+        List<Map.Entry<String, String>> shown = new ArrayList<>(apps);
+        ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.item) {
+            @Override public View getView(int pos, View convert, ViewGroup parent) {
+                View row = super.getView(pos, convert, parent);
+                row.setPaddingRelative(pad, row.getPaddingTop(), pad, row.getPaddingBottom());
+                return row;
+            }
+        };
+        ListView list = new ListView(this);
+        list.setId(R.id.app_list);
+        list.setDivider(null);
+        list.setAdapter(adapter);
+        Runnable filter = () -> {
+            String q = search.getText().toString();
+            List<Map.Entry<String, String>> later = new ArrayList<>();
+            shown.clear();
+            for (Map.Entry<String, String> app : apps) {
+                int rank = Search.rank(app.getValue(), q);
+                if (rank == Search.START) shown.add(app);
+                else if (rank == Search.WORD) later.add(app);
+            }
+            shown.addAll(later);
+            adapter.clear();
+            for (Map.Entry<String, String> app : shown) adapter.add(app.getValue());
+        };
+        filter.run();
+
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams field = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        field.setMarginsRelative(pad, Math.round(8 * density), pad, 0);
+        box.addView(search, field);
+        box.addView(list, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Math.round(360 * density)));
+
+        AlertDialog dialog = new AlertDialog.Builder(this)
                 .setTitle("App auswählen")
-                .setItems(labels, (d, which) -> LimitActivity.open(this, apps.get(which).getKey(), apps.get(which).getValue()))
+                .setView(box)
                 .setNegativeButton("Abbrechen", null)
-                .show();
+                .create();
+        list.setOnItemClickListener((parent, view, pos, id) -> {
+            dialog.dismiss();
+            LimitActivity.open(this, shown.get(pos).getKey(), shown.get(pos).getValue());
+        });
+        search.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            @Override public void afterTextChanged(Editable s) { filter.run(); }
+        });
+        search.setOnEditorActionListener((v, action, event) -> {
+            if (!shown.isEmpty()) {
+                dialog.dismiss();
+                LimitActivity.open(this, shown.get(0).getKey(), shown.get(0).getValue());
+            }
+            return true;
+        });
+        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+                | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        dialog.show();
+        search.requestFocus();
     }
 }

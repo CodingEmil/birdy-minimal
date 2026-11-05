@@ -682,6 +682,154 @@ public class MainActivityTest {
         assertEquals("", prefs.getString("launches", ""));
     }
 
+    // --- Arranging the home screen ---
+
+    private static android.widget.LinearLayout arrangeRow(MainActivity a, int index) {
+        return (android.widget.LinearLayout) ((android.widget.LinearLayout) a.findViewById(R.id.favorites)).getChildAt(index);
+    }
+
+    private static List<String> arrangeLabels(MainActivity a) {
+        android.widget.LinearLayout fav = a.findViewById(R.id.favorites);
+        List<String> out = new ArrayList<>();
+        for (int i = 0; i < fav.getChildCount(); i++) {
+            View child = fav.getChildAt(i);
+            if (child instanceof android.widget.LinearLayout) {
+                out.add(((android.widget.TextView) ((android.widget.LinearLayout) child).getChildAt(0)).getText().toString());
+            }
+        }
+        return out;
+    }
+
+    private static void tapArrow(MainActivity a, int row, boolean up) {
+        arrangeRow(a, row).getChildAt(up ? 1 : 2).performClick();
+        idle();
+    }
+
+    private void seedHome() {
+        prefs.edit().putString("groups", "1\tMusik\t" + key("Spotify"))
+                .putString("favorites", key("Kamera") + "\ngroup:1\n" + key("WhatsApp") + "\n" + key("Google Maps")).commit();
+    }
+
+    @Test
+    public void arrangeMovesAppsAndGroupsWithArrows() throws Exception {
+        seedHome();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "Kamera").performLongClick();
+        pick("Startscreen anordnen");
+        assertEquals(Arrays.asList("Kamera", "Musik  1", "WhatsApp", "Google Maps"), arrangeLabels(a));
+        assertFalse("first entry cannot go up", arrangeRow(a, 0).getChildAt(1).isEnabled());
+        assertFalse("last entry cannot go down", arrangeRow(a, 3).getChildAt(2).isEnabled());
+        tapArrow(a, 0, false); // Kamera down
+        assertEquals(Arrays.asList("Musik  1", "Kamera", "WhatsApp", "Google Maps"), arrangeLabels(a));
+        tapArrow(a, 3, true); // Google Maps up
+        tapArrow(a, 2, true); // and up again
+        assertEquals(Arrays.asList("Musik  1", "Google Maps", "Kamera", "WhatsApp"), arrangeLabels(a));
+        shot(a, "16-arrange");
+        assertEquals("saved right away", "group:1\n" + key("Google Maps") + "\n" + key("Kamera") + "\n" + key("WhatsApp"),
+                prefs.getString("favorites", ""));
+        a.findViewById(R.id.arrange_done).performClick();
+        idle();
+        assertEquals(Arrays.asList("Musik  1", "Google Maps", "Kamera", "WhatsApp"), homeRows(a));
+    }
+
+    @Test
+    public void groupMenuOffersArrangingAndBackEndsIt() throws Exception {
+        seedHome();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "Musik  1").performLongClick();
+        assertTrue(menuTitles().contains("Startscreen anordnen"));
+        pick("Startscreen anordnen");
+        assertEquals(4, arrangeLabels(a).size());
+        a.onBackPressed();
+        idle();
+        assertEquals(Arrays.asList("Kamera", "Musik  1", "WhatsApp", "Google Maps"), homeRows(a));
+        assertEquals(View.INVISIBLE, a.findViewById(R.id.drawer).getVisibility());
+    }
+
+    @Test
+    public void openingTheListOrLeavingEndsArranging() throws Exception {
+        seedHome();
+        installApps(LABELS);
+        ActivityController<MainActivity> c = start();
+        MainActivity a = c.get();
+        homeRow(a, "Kamera").performLongClick();
+        pick("Startscreen anordnen");
+        swipeUp(a);
+        a.onBackPressed();
+        idle();
+        assertEquals(Arrays.asList("Kamera", "Musik  1", "WhatsApp", "Google Maps"), homeRows(a));
+        homeRow(a, "Kamera").performLongClick();
+        pick("Startscreen anordnen");
+        c.pause().stop();
+        c.restart().start().resume();
+        idle();
+        assertEquals(4, homeRows(a).size());
+    }
+
+    @Test
+    public void uninstalledPinsKeepTheirPlaceWhenMoving() throws Exception {
+        prefs.edit().putString("favorites", key("Kamera") + "\n" + key("Gone App") + "\n" + key("WhatsApp")).commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "WhatsApp").performLongClick();
+        pick("Startscreen anordnen");
+        assertEquals(Arrays.asList("Kamera", "WhatsApp"), arrangeLabels(a));
+        tapArrow(a, 1, true);
+        assertEquals(key("WhatsApp") + "\n" + key("Gone App") + "\n" + key("Kamera"), prefs.getString("favorites", ""));
+    }
+
+    @Test
+    public void nothingToArrangeWithOneEntry() throws Exception {
+        prefs.edit().putString("favorites", key("Kamera")).commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "Kamera").performLongClick();
+        assertFalse(menuTitles().contains("Startscreen anordnen"));
+    }
+
+    // --- Searching the app picker of the time limits page ---
+
+    @Test
+    public void appPickerForLimitsCanBeSearched() throws Exception {
+        installApps(LABELS);
+        LimitsActivity page = Robolectric.buildActivity(LimitsActivity.class).setup().get();
+        page.findViewById(R.id.limits_add).performClick();
+        android.app.AlertDialog d = dialog();
+        EditText search = d.findViewById(R.id.app_search);
+        ListView list = d.findViewById(R.id.app_list);
+        assertEquals(LABELS.length, list.getAdapter().getCount());
+        search.setText("s");
+        idle();
+        List<String> shownApps = new ArrayList<>();
+        for (int i = 0; i < list.getAdapter().getCount(); i++) shownApps.add(list.getAdapter().getItem(i).toString());
+        assertEquals("names starting with the query first", Arrays.asList("Signal", "Slack", "Spotify", "Play Store"), shownApps);
+        search.setText("sp");
+        idle();
+        search.onEditorAction(EditorInfo.IME_ACTION_GO);
+        idle();
+        android.content.Intent edit = shadowOf(page).getNextStartedActivity();
+        assertEquals(LimitActivity.class.getName(), edit.getComponent().getClassName());
+        assertEquals("com.example.spotify", edit.getStringExtra(LimitActivity.PKG));
+        assertEquals("Spotify", edit.getStringExtra(LimitActivity.LABEL));
+    }
+
+    @Test
+    public void tappingAnAppInThePickerOpensItsLimits() throws Exception {
+        installApps(LABELS);
+        LimitsActivity page = Robolectric.buildActivity(LimitsActivity.class).setup().get();
+        page.findViewById(R.id.limits_add).performClick();
+        android.app.AlertDialog d = dialog();
+        ((EditText) d.findViewById(R.id.app_search)).setText("wett");
+        idle();
+        ListView list = d.findViewById(R.id.app_list);
+        assertEquals(1, list.getAdapter().getCount());
+        list.performItemClick(list.getAdapter().getView(0, null, list), 0, 0);
+        idle();
+        assertEquals("com.example.wetter", shadowOf(page).getNextStartedActivity().getStringExtra(LimitActivity.PKG));
+    }
+
     @Test
     public void groupsSurviveARestartAndSkipUninstalledApps() throws Exception {
         seedGroup("Musik", "Spotify", "Gone App");
