@@ -4,13 +4,15 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 
 ## Unveröffentlicht
 
+## 1.4-beta.3
+
 ### Neu
-- **YouTube Shorts und Instagram Reels sperren:** In der Birdy-App unter „Shorts & Reels“ einschalten. Öffnest du Shorts oder Reels, geht Birdy sofort zurück; YouTube und Instagram selbst bleiben nutzbar. Braucht die neue Bedienungshilfe „Birdy Shorts & Reels“.
-- **Apps in einer Gruppe anordnen:** Lange auf eine Gruppe drücken → „Apps anordnen“, dann mit ↑ und ↓ verschieben. Ohne eigene Reihenfolge bleibt die Gruppe alphabetisch.
+- **Shorts und Reels sperren:** YouTube und Instagram bleiben nutzbar, nur Shorts und Reels verlässt Birdy sofort wieder. Einschalten in der Birdy-App unter „Shorts & Reels“.
+- **Apps in einer Gruppe anordnen:** Lange auf eine Gruppe drücken → „Apps anordnen“, dann mit ↑ und ↓ verschieben.
 
 ### Verbessert
-- **Neues Design für Sperr- und Zeitabfrage-Seite:** Mehr Abstand zum Rand, die Minuten als große Kacheln und ein ruhiges Einblenden statt hartem Aufpoppen.
-- **Übersichtlicheres „Neu in Birdy“:** Jede Neuerung hat einen kurzen Titel mit einer Zeile Erklärung darunter, nach Neu, Verbessert und Behoben getrennt.
+- **Neue Sperr- und Zeitabfrage-Seite:** Mehr Abstand zum Rand, die Minuten als große Kacheln und ein ruhiges Einblenden.
+- **Übersichtlicheres „Neu in Birdy“:** Jede Neuerung mit kurzem Titel und einer Zeile Erklärung, getrennt nach Neu, Verbessert und Behoben.
 
 ### Intern
 - Google-Play-Hinweise enthalten nur noch, was seit dem letzten Upload auf demselben Track neu ist (Tags `play/<track>/<run>-<version>`), mit dem ersten Satz jedes Punkts, wenn er in die 500 Zeichen passt.
