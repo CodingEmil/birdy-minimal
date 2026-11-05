@@ -12,7 +12,11 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.InputType;
 import android.view.View;
+import android.view.WindowManager;
+import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -169,22 +173,66 @@ public class SetupActivity extends Activity {
         view.setText(text + "  →");
     }
 
+    // The usual times, and last "Eigene Zeit…" for any number of minutes.
     private void chooseAllowance(TextView view, Feeds.Feed feed) {
-        String[] labels = new String[Feeds.ALLOWANCES.length];
-        int checked = 0;
-        for (int i = 0; i < labels.length; i++) {
+        int current = Feeds.allowedMinutes(this, feed);
+        int presets = Feeds.ALLOWANCES.length;
+        String[] labels = new String[presets + 1];
+        int checked = presets; // a typed-in time
+        for (int i = 0; i < presets; i++) {
             labels[i] = Feeds.ALLOWANCES[i] == 0 ? "Sofort sperren" : Limits.duration(Feeds.ALLOWANCES[i]) + " am Tag";
-            if (Feeds.ALLOWANCES[i] == Feeds.allowedMinutes(this, feed)) checked = i;
+            if (Feeds.ALLOWANCES[i] == current) checked = i;
         }
+        labels[presets] = checked == presets ? "Eigene Zeit: " + Limits.duration(current) + " am Tag" : "Eigene Zeit…";
         new AlertDialog.Builder(this)
                 .setTitle(feed.label + " pro Tag")
                 .setSingleChoiceItems(labels, checked, (dialog, which) -> {
+                    dialog.dismiss();
+                    if (which == presets) {
+                        askMinutes(view, feed, current);
+                        return;
+                    }
                     Feeds.setAllowedMinutes(this, feed, Feeds.ALLOWANCES[which]);
                     renderAllowance(view, feed);
-                    dialog.dismiss();
                 })
                 .setNegativeButton("Abbrechen", null)
                 .show();
+    }
+
+    private void askMinutes(TextView view, Feeds.Feed feed, int current) {
+        float dp = getResources().getDisplayMetrics().density;
+        EditText input = new EditText(this);
+        input.setId(R.id.allow_minutes);
+        input.setHint("Minuten");
+        if (current > 0) {
+            input.setText(String.valueOf(current));
+            input.setSelection(input.length());
+        }
+        input.setSingleLine(true);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER);
+        input.setTextColor(Color.WHITE);
+        input.setHintTextColor(0xFF6B6B6B);
+        FrameLayout box = new FrameLayout(this);
+        int pad = Math.round(24 * dp);
+        box.setPaddingRelative(pad, Math.round(8 * dp), pad, 0);
+        box.addView(input);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Minuten pro Tag")
+                .setView(box)
+                .setNegativeButton("Abbrechen", null)
+                .setPositiveButton("Speichern", (d, which) -> {
+                    int minutes;
+                    try {
+                        minutes = Integer.parseInt(input.getText().toString().trim());
+                    } catch (NumberFormatException e) { // empty or too long: keep what was set
+                        return;
+                    }
+                    Feeds.setAllowedMinutes(this, feed, Math.max(0, Math.min(minutes, Feeds.MAX_MINUTES)));
+                    renderAllowance(view, feed);
+                })
+                .create();
+        dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        dialog.show();
     }
 
     // "Bedienungshilfe einschalten" shows while a feed is blocked but the service is off.

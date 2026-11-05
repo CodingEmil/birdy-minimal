@@ -173,4 +173,21 @@ public class FeedsTest {
         assertEquals("Pro Tag: 30 min · heute 0 min  →", allow.getText().toString());
         assertEquals("Reels keep theirs", 0, Feeds.allowedMinutes(a, Feeds.Feed.REELS));
     }
+
+    @Test
+    public void anyTimeCanBeTypedIn() {
+        prefs.edit().putBoolean("blockReels", true).commit();
+        SetupActivity a = Robolectric.buildActivity(SetupActivity.class).setup().get();
+        android.widget.TextView allow = a.findViewById(R.id.allow_reels);
+        allow.performClick();
+        AlertDialog list = (AlertDialog) ShadowAlertDialog.getLatestAlertDialog();
+        assertEquals("no 3 h preset, typing comes last", Feeds.ALLOWANCES.length + 1, list.getListView().getCount());
+        shadowOf(list).clickOnItem(Feeds.ALLOWANCES.length);
+        AlertDialog ask = (AlertDialog) ShadowAlertDialog.getLatestAlertDialog();
+        ((android.widget.EditText) ask.findViewById(R.id.allow_minutes)).setText("45");
+        ask.getButton(AlertDialog.BUTTON_POSITIVE).performClick();
+        shadowOf(android.os.Looper.getMainLooper()).idle();
+        assertEquals(45, Feeds.allowedMinutes(a, Feeds.Feed.REELS));
+        assertEquals("Pro Tag: 45 min · heute 0 min  →", allow.getText().toString());
+    }
 }
