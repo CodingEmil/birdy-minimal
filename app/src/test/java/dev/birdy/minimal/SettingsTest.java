@@ -48,10 +48,11 @@ public class SettingsTest {
     }
 
     @Test
-    public void howToSwitchShowsOnlyUntilBirdyIsTheHomeApp() {
-        SetupActivity setup = Robolectric.buildActivity(SetupActivity.class).setup().get();
-        assertEquals(View.VISIBLE, setup.findViewById(R.id.onboarding).getVisibility());
-        assertEquals("Als Startbildschirm festlegen", text(setup, R.id.action));
+    public void onceBirdyIsTheHomeAppTheHowToSwitchStepsGo() {
+        SetupActivity setup = Robolectric.buildActivity(SetupActivity.class).setup().get(); // its only home app here
+        assertEquals("Aktiv als Launcher", text(setup, R.id.status));
+        assertEquals(View.GONE, setup.findViewById(R.id.onboarding).getVisibility());
+        assertEquals("Launcher wechseln", text(setup, R.id.action));
     }
 
     @Test
