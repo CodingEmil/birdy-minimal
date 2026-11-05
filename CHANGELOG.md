@@ -8,10 +8,12 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 - **Apps in einer Gruppe anordnen:** Lange auf eine Gruppe drücken → „Apps anordnen“, dann mit ↑ und ↓ verschieben. Ohne eigene Reihenfolge bleibt die Gruppe alphabetisch.
 
 ### Verbessert
+- **Neues Design für Sperr- und Zeitabfrage-Seite:** Mehr Abstand zum Rand, die Minuten als große Kacheln und ein ruhiges Einblenden statt hartem Aufpoppen.
 - **Übersichtlicheres „Neu in Birdy“:** Jede Neuerung hat einen kurzen Titel mit einer Zeile Erklärung darunter, nach Neu, Verbessert und Behoben getrennt.
 
 ### Intern
 - Google-Play-Hinweise enthalten nur noch, was seit dem letzten Upload auf demselben Track neu ist (Tags `play/<track>/<run>-<version>`), mit dem ersten Satz jedes Punkts, wenn er in die 500 Zeichen passt.
+- Ein von Hand gestarteter Build kann Screenshots der Test-Screens als Artefakt `birdy-screenshots` mitliefern (Option „screenshots“, lokal `-PshotsDir=…`).
 - Projekt-Skill `.claude/skills/changelog`: wie Einträge aussehen und wie sie vor jedem Release durchgegangen, zusammengefasst und gekürzt werden.
 
 ## 1.4-beta.2

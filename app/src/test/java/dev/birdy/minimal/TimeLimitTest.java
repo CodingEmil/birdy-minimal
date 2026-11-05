@@ -131,6 +131,13 @@ public class TimeLimitTest {
     private static void shot(android.app.Activity a, String name) throws Exception {
         if (System.getProperty("shots.dir") == null) return;
         android.view.View root = a.getWindow().getDecorView();
+        for (int id : new int[] {R.id.block_content, R.id.session_content}) { // show the end of the fade-in
+            android.view.View content = root.findViewById(id);
+            if (content == null) continue;
+            content.animate().cancel();
+            content.setAlpha(1f);
+            content.setTranslationY(0f);
+        }
         android.graphics.Bitmap bmp = android.graphics.Bitmap.createBitmap(root.getWidth(), root.getHeight(), android.graphics.Bitmap.Config.ARGB_8888);
         root.draw(new android.graphics.Canvas(bmp));
         java.io.File dir = new java.io.File(System.getProperty("shots.dir"));
@@ -488,17 +495,26 @@ public class TimeLimitTest {
         return Robolectric.buildActivity(SessionActivity.class, intent).setup().get();
     }
 
-    private static java.util.List<String> choices(SessionActivity a) {
+    // The length tiles sit in rows of two inside session_choices.
+    private static java.util.List<TextView> tiles(SessionActivity a) {
         android.widget.LinearLayout list = a.findViewById(R.id.session_choices);
+        java.util.List<TextView> out = new java.util.ArrayList<>();
+        for (int i = 0; i < list.getChildCount(); i++) {
+            android.widget.LinearLayout row = (android.widget.LinearLayout) list.getChildAt(i);
+            for (int j = 0; j < row.getChildCount(); j++) out.add((TextView) row.getChildAt(j));
+        }
+        return out;
+    }
+
+    private static java.util.List<String> choices(SessionActivity a) {
         java.util.List<String> out = new java.util.ArrayList<>();
-        for (int i = 0; i < list.getChildCount(); i++) out.add(((TextView) list.getChildAt(i)).getText().toString());
+        for (TextView t : tiles(a)) out.add(t.getText().toString());
         return out;
     }
 
     private static void choose(SessionActivity a, String length) {
-        android.widget.LinearLayout list = a.findViewById(R.id.session_choices);
-        for (int i = 0; i < list.getChildCount(); i++) {
-            if (((TextView) list.getChildAt(i)).getText().toString().equals(length)) { list.getChildAt(i).performClick(); return; }
+        for (TextView t : tiles(a)) {
+            if (t.getText().toString().equals(length)) { t.performClick(); return; }
         }
         throw new AssertionError("no choice " + length + " in " + choices(a));
     }

@@ -53,6 +53,40 @@
         <item name="android:textSize">14sp</item>
     </style>
 
+    <!-- Time limit screens (asking how long, blocked): clock badge, big thin app name, white button at the bottom. -->
+    <style name="Birdy.Badge" parent="">
+        <item name="android:layout_width">56dp</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="android:background">@drawable/circle</item>
+        <item name="android:padding">16dp</item>
+        <item name="android:src">@drawable/ic_time</item>
+        <item name="android:tint">#B3B3B3</item>
+        <item name="android:importantForAccessibility">no</item>
+    </style>
+
+    <style name="Birdy.Title" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginStart">-2dp</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:fontVariationSettings">"'wght' 250"</item>
+        <item name="android:lineSpacingMultiplier">0.95</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">44sp</item>
+    </style>
+
+    <style name="Birdy.Button" parent="">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="android:background">@drawable/button</item>
+        <item name="android:fontVariationSettings">"'wght' 500"</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textColor">@android:color/black</item>
+        <item name="android:textSize">17sp</item>
+    </style>
+
     <style name="Birdy.Popup" parent="@android:style/Widget.Material.PopupMenu">
         <item name="android:popupBackground">@drawable/popup</item>
     </style>

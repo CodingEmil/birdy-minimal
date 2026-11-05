@@ -55,8 +55,10 @@ dependencies {
     testImplementation("org.robolectric:robolectric:4.16.1") // tests only, nothing of it ships in the APK
 }
 
-// Full assertion messages in the CI log, not just the line number.
+// Full assertion messages in the CI log, not just the line number. With -PshotsDir=<dir> the UI tests also
+// write screenshots of the screens they open (see shot() in the tests).
 tasks.withType<Test>().configureEach {
+    providers.gradleProperty("shotsDir").orNull?.let { systemProperty("shots.dir", it) }
     testLogging {
         events("failed")
         exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL

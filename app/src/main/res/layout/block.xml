@@ -1,49 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Block screen: which app, why, and the only way out (home). -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Block screen: which app, why, and the only way out (home). The outer frame takes the system bar insets,
+     so the inner padding keeps the content off the screen edges. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/black"
-    android:fitsSystemWindows="true"
-    android:orientation="vertical"
-    android:paddingHorizontal="32dp"
-    android:paddingTop="96dp"
-    android:paddingBottom="24dp">
+    android:fitsSystemWindows="true">
 
-    <TextView
-        android:id="@+id/block_title"
-        style="@style/Birdy.Eyebrow"
-        android:layout_marginTop="0dp" />
-
-    <TextView
-        android:id="@+id/block_app"
+    <LinearLayout
+        android:id="@+id/block_content"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="-2dp"
-        android:fontVariationSettings="'wght' 250"
-        android:textColor="@android:color/white"
-        android:textSize="48sp" />
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingHorizontal="28dp"
+        android:paddingTop="56dp"
+        android:paddingBottom="24dp">
 
-    <TextView
-        android:id="@+id/block_detail"
-        style="@style/Birdy.Line"
-        android:layout_marginTop="16dp"
-        android:textColor="#B3B3B3" />
+        <ImageView style="@style/Birdy.Badge" />
 
-    <Space
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
+        <TextView
+            android:id="@+id/block_title"
+            style="@style/Birdy.Eyebrow"
+            android:layout_marginTop="28dp" />
 
-    <Button
-        android:id="@+id/block_home"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:background="@drawable/button"
-        android:fontVariationSettings="'wght' 500"
-        android:stateListAnimator="@null"
-        android:text="Zum Startscreen"
-        android:textAllCaps="false"
-        android:textColor="@android:color/black"
-        android:textSize="17sp" />
-</LinearLayout>
+        <TextView
+            android:id="@+id/block_app"
+            style="@style/Birdy.Title" />
+
+        <TextView
+            android:id="@+id/block_detail"
+            style="@style/Birdy.Line"
+            android:layout_marginTop="8dp"
+            android:textColor="#B3B3B3" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/block_home"
+            style="@style/Birdy.Button"
+            android:text="Zum Startscreen" />
+    </LinearLayout>
+</FrameLayout>

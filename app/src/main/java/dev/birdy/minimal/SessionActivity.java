@@ -5,7 +5,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
+import android.text.style.RelativeSizeSpan;
 import android.util.TypedValue;
+import android.view.Gravity;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -70,17 +75,49 @@ public class SessionActivity extends Activity {
         List<Integer> lengths = new ArrayList<>();
         for (int m : LENGTHS) if (m <= left) lengths.add(m);
         if (left < LENGTHS[LENGTHS.length - 1] && !lengths.contains(left)) lengths.add(left); // the rest of today
-        for (int minutes : lengths) {
-            TextView row = (TextView) getLayoutInflater().inflate(R.layout.item, choices, false);
-            row.setText(Limits.duration(minutes));
-            row.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
-            row.setPaddingRelative(0, row.getPaddingTop(), 0, row.getPaddingBottom());
-            row.setOnClickListener(v -> {
+        float dp = getResources().getDisplayMetrics().density;
+        int gap = Math.round(12 * dp);
+        LinearLayout row = null;
+        for (int i = 0; i < lengths.size(); i++) {
+            int minutes = lengths.get(i);
+            if (i % 2 == 0) { // two tiles per row; an odd last one takes the whole row
+                row = new LinearLayout(this);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, Math.round(84 * dp));
+                if (i > 0) lp.topMargin = gap;
+                choices.addView(row, lp);
+            }
+            TextView tile = tile(minutes);
+            tile.setOnClickListener(v -> {
                 Usage.startSession(this, limit, minutes);
                 open();
             });
-            choices.addView(row);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1);
+            if (i % 2 == 1) lp.setMarginStart(gap);
+            row.addView(tile, lp);
         }
+        BlockActivity.reveal(findViewById(R.id.session_content));
+    }
+
+    // "10 min" with a big thin number and a small grey unit; "1 h 30 min" keeps its parts the same way.
+    private TextView tile(int minutes) {
+        String text = Limits.duration(minutes);
+        SpannableStringBuilder s = new SpannableStringBuilder(text);
+        java.util.regex.Matcher unit = java.util.regex.Pattern.compile("[^0-9\\s]+").matcher(text);
+        while (unit.find()) {
+            s.setSpan(new RelativeSizeSpan(0.42f), unit.start(), unit.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            s.setSpan(new ForegroundColorSpan(0xFF8C8C8C), unit.start(), unit.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        TextView tile = new TextView(this);
+        tile.setText(s);
+        tile.setContentDescription(text);
+        tile.setGravity(Gravity.CENTER);
+        tile.setBackgroundResource(R.drawable.tile);
+        tile.setTextColor(0xFFFFFFFF);
+        tile.setTextSize(TypedValue.COMPLEX_UNIT_SP, 36);
+        tile.setFontVariationSettings("'wght' 300");
+        tile.setFontFeatureSettings("tnum");
+        tile.setIncludeFontPadding(false);
+        return tile;
     }
 
     private void open() {

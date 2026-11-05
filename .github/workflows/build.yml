@@ -17,6 +17,10 @@ on:
         description: "Version name for this build, e.g. 1.4-beta.2 (empty = dev)"
         type: string
         default: ""
+      screenshots:
+        description: "Also save screenshots of the screens the UI tests open (artifact birdy-screenshots)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write # to publish releases on tags
@@ -46,7 +50,9 @@ jobs:
             echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/birdy.jks"
             export BIRDY_KEYSTORE="$RUNNER_TEMP/birdy.jks"
           fi
-          ./gradlew testReleaseUnitTest assembleRelease bundleRelease --no-daemon
+          shots=()
+          if [ "${{ inputs.screenshots }}" = "true" ]; then shots=(-PshotsDir="$PWD/screenshots"); fi
+          ./gradlew testReleaseUnitTest assembleRelease bundleRelease --no-daemon "${shots[@]}"
           mv app/build/outputs/apk/release/app-release.apk birdy.apk
           mv app/build/outputs/bundle/release/app-release.aab birdy.aab
 
@@ -54,6 +60,12 @@ jobs:
         with:
           name: birdy-apk
           path: birdy.apk
+
+      - uses: actions/upload-artifact@v7
+        if: inputs.screenshots
+        with:
+          name: birdy-screenshots
+          path: screenshots
 
       # For the Play Console: upload this bundle (signed with the same key as the APK).
       - uses: actions/upload-artifact@v7

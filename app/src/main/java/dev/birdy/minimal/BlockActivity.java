@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.view.View;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.TextView;
 
 // Covers a blocked app. Leaving it always goes to the home screen, never back into the app.
@@ -39,6 +41,15 @@ public class BlockActivity extends Activity {
         ((TextView) findViewById(R.id.block_app)).setText(label(pkg));
         ((TextView) findViewById(R.id.block_title)).setText(intent.getStringExtra(TITLE));
         ((TextView) findViewById(R.id.block_detail)).setText(intent.getStringExtra(DETAIL));
+        reveal(findViewById(R.id.block_content));
+    }
+
+    // The content rises a little and fades in, so the screen arrives calmly instead of popping over the app.
+    static void reveal(View content) {
+        content.animate().cancel();
+        content.setAlpha(0f);
+        content.setTranslationY(16 * content.getResources().getDisplayMetrics().density);
+        content.animate().alpha(1f).translationY(0f).setDuration(320).setInterpolator(new DecelerateInterpolator(2f)).start();
     }
 
     private String label(String pkg) {
