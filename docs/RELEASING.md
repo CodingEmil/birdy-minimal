@@ -34,11 +34,7 @@ Wie Einträge aussehen und wie sie vor einem Release durchgegangen werden: `.cla
 
 Nach jedem Play-Upload setzt die CI ein Tag `play/<track>/<lauf>-<version>` (z. B. `play/alpha/57-1.4`). Beim nächsten Upload auf denselben Track vergleicht `tools/changelog.py play` die Punkte mit dem `CHANGELOG.md` dieses Tags und schreibt nur neue Punkte in „Neuerungen“. Eine volle `1.4` nach `1.4-beta.2` auf demselben Track zeigt also nur, was nach der Beta dazukam. Ohne Tag (erster Upload auf einem Track) stehen alle Punkte der Version drin.
 
-Uploads von vor diesem Mechanismus haben kein Tag. Für den Upload von `1.4-beta.2` einmalig nachtragen (Track anpassen, falls nicht `alpha`):
-```
-git tag play/alpha/0-1.4-beta.2 5a036dc
-git push origin play/alpha/0-1.4-beta.2
-```
+Ein Build von Hand mit Track (Actions → „Build APK“ → „Run workflow“, z. B. `alpha` und `1.4-beta.3`) setzt das Tag genauso. So lassen sich auch Betas in den geschlossenen Test bringen, ohne `PLAY_BETA_TRACK` zu setzen.
 
 ## Einstellungen (GitHub → Settings → Secrets and variables → Actions → Variables)
 
