@@ -59,7 +59,11 @@ public class BlockService extends AccessibilityService {
             handler.removeCallbacks(settle);
             handler.postDelayed(settle, SETTLE);
             if (!paneGone && covers(pkg, event.getClassName())) {
-                obscured = true; // until the app reports back: a window sends this whenever it regains focus
+                obscured = true; // until the app reports back (a window sends this whenever it regains focus) or the panel closes
+                updateBar();
+            } else if (paneGone && pkg.equals("com.android.systemui") && covers(pkg, event.getClassName())) {
+                // A notification banner reports like the shade, but the app never loses focus, so it will not report back.
+                obscured = false;
                 updateBar();
             }
             return;

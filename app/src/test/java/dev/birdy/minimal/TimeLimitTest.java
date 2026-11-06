@@ -818,7 +818,9 @@ public class TimeLimitTest {
         windowEvent("com.android.systemui", "android.widget.FrameLayout", 0);
         assertNull("the shade", service.bar.view);
         windowEvent("com.android.systemui", "android.widget.FrameLayout", AccessibilityEvent.CONTENT_CHANGE_TYPE_PANE_DISAPPEARED);
-        assertNull("a closing pane does not bring it back", service.bar.view);
+        assertNotNull("a notification banner is gone, and the app does not report back after one", service.bar.view);
+        windowEvent("com.android.systemui", "android.widget.FrameLayout", 0);
+        assertNull(service.bar.view);
         front(INSTA);
         assertNotNull("the app has focus again", service.bar.view);
     }

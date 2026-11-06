@@ -6,6 +6,8 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 
 ### Intern
 - README neu aufgebaut, mit neuen Screenshots in `docs/images/`.
+### Behoben
+- **Zeitleiste nach Benachrichtigungen:** Kam eine Benachrichtigung, verschwand die Leiste oben und blieb weg. Jetzt kommt sie wieder, sobald das Banner weg ist.
 
 ## 1.5-beta.2
 
