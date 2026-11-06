@@ -4,6 +4,9 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 
 ## Unveröffentlicht
 
+### Intern
+- README neu aufgebaut, mit neuen Screenshots in `docs/images/`.
+
 ## 1.5-beta.2
 
 ### Neu
