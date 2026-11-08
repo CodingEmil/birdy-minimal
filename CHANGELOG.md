@@ -4,6 +4,8 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 
 ## Unveröffentlicht
 
+## 1.5-beta.4
+
 ### Neu
 - **Akzentfarbe Orange:** Datum und Wochentag oben leuchten orange, eine angetippte Gruppe auch, solange sie offen ist. Einstellung in der Birdy-App unter „Startbildschirm“ → „Akzentfarbe“.
 

@@ -600,12 +600,10 @@ public class MainActivity extends Activity {
     private static final ColorStateList ORANGE_PRESSED = new ColorStateList(
             new int[][] {{android.R.attr.state_pressed}, {}}, new int[] {ORANGE, Color.WHITE});
 
-    // Date (and the temperature next to it) in the accent color, grey otherwise.
+    // Date and weekday in the accent color, grey otherwise. The temperature next to it keeps its own color.
     private void applyAccent() {
         orange = ACCENT_ORANGE.equals(prefs.getString(ACCENT, ""));
-        int color = orange ? ORANGE : 0xFF8C8C8C;
-        ((TextView) findViewById(R.id.date)).setTextColor(color);
-        ((TextView) findViewById(R.id.temperature)).setTextColor(color);
+        ((TextView) findViewById(R.id.date)).setTextColor(orange ? ORANGE : 0xFF8C8C8C);
     }
 
     private CharSequence groupText(Groups.Group group) {
