@@ -8,13 +8,17 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ForegroundColorSpan;
 import android.view.View;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
 
-// "Startbildschirm": the status bar, the temperature next to the date, names in small letters, a black wallpaper, and swiping down
+// "Startbildschirm": the accent color, the status bar, the temperature next to the date, names in small letters, a black wallpaper, and swiping down
 // for notifications.
 public class HomeSettingsActivity extends Activity {
     private static final int WEATHER = 2;
@@ -31,12 +35,40 @@ public class HomeSettingsActivity extends Activity {
         SetupActivity.bindSwitch(this, R.id.hide_status_bar, MainActivity.HIDE_STATUS_BAR, true);
         SetupActivity.bindSwitch(this, R.id.lowercase, MainActivity.LOWERCASE, false);
         bindWeatherSwitch(prefs);
+        bindAccent(prefs);
         findViewById(R.id.black_wallpaper).setOnClickListener(v -> new AlertDialog.Builder(this)
                 .setTitle("Hintergrund schwarz machen?")
                 .setMessage("Dein aktuelles Hintergrundbild wird durch Schwarz ersetzt. Der Sperrbildschirm bleibt, wie er ist.")
                 .setNegativeButton("Abbrechen", null)
                 .setPositiveButton("Ersetzen", (dialog, which) -> setBlackWallpaper())
                 .show());
+    }
+
+    private static final String[] ACCENT_NAMES = {"Weiß", "Orange"};
+
+    private void bindAccent(SharedPreferences prefs) {
+        TextView row = findViewById(R.id.accent);
+        Runnable show = () -> {
+            boolean orange = MainActivity.ACCENT_ORANGE.equals(prefs.getString(MainActivity.ACCENT, ""));
+            SpannableStringBuilder text = new SpannableStringBuilder("Akzentfarbe: ");
+            int start = text.length();
+            text.append(ACCENT_NAMES[orange ? 1 : 0]);
+            if (orange) text.setSpan(new ForegroundColorSpan(MainActivity.ORANGE), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            row.setText(text.append("  →"));
+        };
+        show.run();
+        row.setOnClickListener(v -> {
+            int current = MainActivity.ACCENT_ORANGE.equals(prefs.getString(MainActivity.ACCENT, "")) ? 1 : 0;
+            new AlertDialog.Builder(this)
+                    .setTitle("Akzentfarbe")
+                    .setSingleChoiceItems(ACCENT_NAMES, current, (dialog, which) -> {
+                        prefs.edit().putString(MainActivity.ACCENT, which == 1 ? MainActivity.ACCENT_ORANGE : "white").apply();
+                        show.run();
+                        dialog.dismiss();
+                    })
+                    .setNegativeButton("Abbrechen", null)
+                    .show();
+        });
     }
 
     // Home wallpaper only: with FLAG_SYSTEM alone, Android keeps the current image on the lock screen.

@@ -66,6 +66,14 @@
             android:text="App- und Gruppennamen erscheinen nur in Kleinbuchstaben, auf dem Startscreen und in der App-Liste. Ausschalten bringt sie wieder, wie sie heißen." />
 
         <TextView
+            android:id="@+id/accent"
+            style="@style/Birdy.Link" />
+
+        <TextView
+            style="@style/Birdy.Hint"
+            android:text="Färbt Datum und Wochentag oben. Eine angetippte Gruppe leuchtet in der Farbe und bleibt so, solange sie offen ist." />
+
+        <TextView
             android:id="@+id/black_wallpaper"
             style="@style/Birdy.Link"
             android:text="Hintergrund schwarz machen  →" />

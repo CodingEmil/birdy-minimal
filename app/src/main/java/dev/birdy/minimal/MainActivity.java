@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.LauncherActivityInfo;
 import android.content.pm.LauncherApps;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
@@ -68,6 +69,9 @@ import java.util.function.Consumer;
 public class MainActivity extends Activity {
     static final String LOWERCASE = "lowercase"; // app and group names in small letters only
     static final String HIDE_STATUS_BAR = "hideStatusBar"; // home without clock and icons at the top; on by default
+    static final String ACCENT = "accent"; // accent color on home: "white" (default) or "orange"
+    static final String ACCENT_ORANGE = "orange";
+    static final int ORANGE = 0xFFFF7A00; // a full, saturated orange that reads well on black
     static final String PREFS = "birdy"; // shared with the settings pages, which edit the keys "top", "newest", "type", "bottom", "shade" and more
     private static final int MAX_FAVORITES = 7; // apps and groups together
     private static final int TOP_COUNT = 5;
@@ -82,6 +86,7 @@ public class MainActivity extends Activity {
     private Groups groups;
     boolean statusBarHidden; // visible to tests
     private boolean lowercase; // app and group names in small letters (setting "Namen kleingeschrieben")
+    private boolean orange; // accent color "Orange": date and tapped or open groups in orange
     private String openGroup; // id of the group unfolded on the home screen, or null
     private View openFirst, openLast; // its header and last row, to scroll them into view
     private boolean arranging; // home shows up/down arrows next to each entry
@@ -125,6 +130,7 @@ public class MainActivity extends Activity {
     // Held in a field: SharedPreferences only keeps a weak reference to listeners.
     private final SharedPreferences.OnSharedPreferenceChangeListener settingsChanged = (p, key) -> {
         if ("top".equals(key) || "newest".equals(key) || LOWERCASE.equals(key)) load();
+        else if (ACCENT.equals(key)) { applyAccent(); renderHome(); }
         else if (HIDE_STATUS_BAR.equals(key)) applyStatusBar();
         else if ("bottom".equals(key) || "contacts".equals(key) || "web".equals(key)) applySearch(true);
     };
@@ -156,6 +162,7 @@ public class MainActivity extends Activity {
         date.setFormat24Hour(datePattern);
 
         weather = new Weather(this, findViewById(android.R.id.content), findViewById(R.id.temperature));
+        applyAccent();
 
         home = findViewById(R.id.home);
         drawer = findViewById(R.id.drawer);
@@ -583,9 +590,22 @@ public class MainActivity extends Activity {
         row.setText(groupText(group));
         row.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
         row.setContentDescription("Gruppe " + group.name + ", " + members.size() + " Apps");
+        if (orange) row.setTextColor(group.id.equals(openGroup) ? ColorStateList.valueOf(ORANGE) : ORANGE_PRESSED);
         row.setOnClickListener(v -> toggleGroup(group));
         row.setOnLongClickListener(v -> { showGroupMenu(v, group); return true; });
         return row;
+    }
+
+    // White, orange while pressed; an open group stays orange (set in groupRow).
+    private static final ColorStateList ORANGE_PRESSED = new ColorStateList(
+            new int[][] {{android.R.attr.state_pressed}, {}}, new int[] {ORANGE, Color.WHITE});
+
+    // Date (and the temperature next to it) in the accent color, grey otherwise.
+    private void applyAccent() {
+        orange = ACCENT_ORANGE.equals(prefs.getString(ACCENT, ""));
+        int color = orange ? ORANGE : 0xFF8C8C8C;
+        ((TextView) findViewById(R.id.date)).setTextColor(color);
+        ((TextView) findViewById(R.id.temperature)).setTextColor(color);
     }
 
     private CharSequence groupText(Groups.Group group) {
