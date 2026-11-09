@@ -4,6 +4,8 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 
 ## Unveröffentlicht
 
+## 1.5-beta.5
+
 ### Neu
 - **Apps umbenennen:** Lange auf eine App drücken → „Umbenennen…“. Leer lassen bringt den ursprünglichen Namen zurück.
 
