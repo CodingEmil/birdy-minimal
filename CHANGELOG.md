@@ -4,6 +4,12 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 
 ## Unveröffentlicht
 
+### Neu
+- **Apps umbenennen:** Lange auf eine App drücken → „Umbenennen…“. Leer lassen bringt den ursprünglichen Namen zurück.
+
+### Verbessert
+- **Akzentfarbe in Grün und Blau:** Neben Orange gibt es jetzt Grün und Blau. Eine offene Gruppe ist außerdem etwas fetter geschrieben.
+
 ## 1.5-beta.4
 
 ### Neu

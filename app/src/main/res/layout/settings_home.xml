@@ -71,7 +71,7 @@
 
         <TextView
             style="@style/Birdy.Hint"
-            android:text="Färbt Datum und Wochentag oben. Eine angetippte Gruppe leuchtet in der Farbe und bleibt so, solange sie offen ist." />
+            android:text="Färbt Datum und Wochentag oben. Eine angetippte Gruppe leuchtet in der Farbe und bleibt so, solange sie offen ist. Zur Wahl: Orange, Grün und Blau." />
 
         <TextView
             android:id="@+id/black_wallpaper"
