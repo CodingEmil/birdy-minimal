@@ -10,6 +10,9 @@ Neues kommt sofort unter „Unveröffentlicht“. Eine Beta (`v1.4-beta.2`) beko
 ### Verbessert
 - **Akzentfarbe in Grün und Blau:** Neben Orange gibt es jetzt Grün und Blau. Eine offene Gruppe ist außerdem etwas fetter geschrieben.
 
+### Behoben
+- **Temperatur auf Samsung-Handys:** Birdy nimmt jetzt das passende Samsung-Wetter-Widget und liest die Temperatur auch, wenn Zahl und ° getrennt stehen.
+
 ## 1.5-beta.4
 
 ### Neu

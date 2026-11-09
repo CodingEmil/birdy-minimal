@@ -51,6 +51,22 @@ public class WeatherTest {
         assertEquals(now, Weather.temperature(widget(now), null));
     }
 
+    @Test public void readsPaddedTemperature() {
+        TextView now = text(" 12° ", 40);
+        assertEquals(now, Weather.temperature(widget(now), null));
+        assertEquals("12°", Weather.reading(now));
+    }
+
+    @Test public void readsNumberAndDegreeDrawnSeparately() {
+        TextView now = text("12", 40);
+        assertEquals(now, Weather.temperature(widget(text("Berlin", 14), now, text("°", 20)), null));
+        assertEquals("12°", Weather.reading(now));
+    }
+
+    @Test public void bareNumberWithoutDegreeIsNoTemperature() {
+        assertNull(Weather.temperature(widget(text("12", 40), text("Berlin", 14)), null));
+    }
+
     private ComponentName install(String pkg, String cls) {
         AppWidgetProviderInfo info = new AppWidgetProviderInfo();
         info.provider = new ComponentName(pkg, cls);
@@ -67,6 +83,20 @@ public class WeatherTest {
         install("com.example.other", "Widget");
         ComponentName samsung = install("com.sec.android.daemonapp", "com.sec.android.daemonapp.appwidget.AnyName");
         assertEquals(samsung, Weather.provider(context));
+    }
+
+    @Test public void prefersSamsungsSmallWeatherWidget() {
+        install("com.sec.android.daemonapp", "com.sec.android.daemonapp.appwidget.WeatherCoverAppWidget");
+        install("com.sec.android.daemonapp", "com.sec.android.daemonapp.appwidget.WeatherForecastAppWidget");
+        ComponentName small = install("com.sec.android.daemonapp", "com.sec.android.daemonapp.appwidget.WeatherAppWidget2x1");
+        install("com.sec.android.daemonapp", "com.sec.android.daemonapp.appwidget.WeatherAppWidget");
+        assertEquals(small, Weather.provider(context));
+    }
+
+    @Test public void samsungCoverWidgetOnlyAsLastResort() {
+        install("com.sec.android.daemonapp", "com.sec.android.daemonapp.appwidget.WeatherCoverAppWidget");
+        ComponentName other = install("com.sec.android.daemonapp", "com.sec.android.daemonapp.appwidget.WeatherAestheticAppWidget");
+        assertEquals(other, Weather.provider(context));
     }
 
     @Test public void pixelWidgetWinsOverOtherWidgetsOfThatApp() {

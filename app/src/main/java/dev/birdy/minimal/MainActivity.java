@@ -254,7 +254,9 @@ public class MainActivity extends Activity {
     @Override
     protected void onStart() {
         super.onStart();
-        weather.start(prefs.getInt(Weather.KEY, Weather.NONE));
+        int weatherId = prefs.getInt(Weather.KEY, Weather.NONE), upgraded = Weather.upgrade(this, weatherId);
+        if (upgraded != weatherId) prefs.edit().putInt(Weather.KEY, upgraded).apply();
+        weather.start(upgraded);
     }
 
     // After an update: what's new (once). Otherwise: limits without the grants they need do nothing; say so once.
