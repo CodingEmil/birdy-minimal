@@ -44,31 +44,26 @@ public class HomeSettingsActivity extends Activity {
                 .show());
     }
 
-    private static final String[] ACCENT_NAMES = {"Weiß", "Orange"};
-
     private void bindAccent(SharedPreferences prefs) {
         TextView row = findViewById(R.id.accent);
         Runnable show = () -> {
-            boolean orange = MainActivity.ACCENT_ORANGE.equals(prefs.getString(MainActivity.ACCENT, ""));
+            int i = MainActivity.accentIndex(prefs);
             SpannableStringBuilder text = new SpannableStringBuilder("Akzentfarbe: ");
             int start = text.length();
-            text.append(ACCENT_NAMES[orange ? 1 : 0]);
-            if (orange) text.setSpan(new ForegroundColorSpan(MainActivity.ORANGE), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            text.append(MainActivity.ACCENT_NAMES[i]);
+            if (i != 0) text.setSpan(new ForegroundColorSpan(MainActivity.ACCENT_COLORS[i]), start, text.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             row.setText(text.append("  →"));
         };
         show.run();
-        row.setOnClickListener(v -> {
-            int current = MainActivity.ACCENT_ORANGE.equals(prefs.getString(MainActivity.ACCENT, "")) ? 1 : 0;
-            new AlertDialog.Builder(this)
-                    .setTitle("Akzentfarbe")
-                    .setSingleChoiceItems(ACCENT_NAMES, current, (dialog, which) -> {
-                        prefs.edit().putString(MainActivity.ACCENT, which == 1 ? MainActivity.ACCENT_ORANGE : "white").apply();
-                        show.run();
-                        dialog.dismiss();
-                    })
-                    .setNegativeButton("Abbrechen", null)
-                    .show();
-        });
+        row.setOnClickListener(v -> new AlertDialog.Builder(this)
+                .setTitle("Akzentfarbe")
+                .setSingleChoiceItems(MainActivity.ACCENT_NAMES, MainActivity.accentIndex(prefs), (dialog, which) -> {
+                    prefs.edit().putString(MainActivity.ACCENT, MainActivity.ACCENT_KEYS[which]).apply();
+                    show.run();
+                    dialog.dismiss();
+                })
+                .setNegativeButton("Abbrechen", null)
+                .show());
     }
 
     // Home wallpaper only: with FLAG_SYSTEM alone, Android keeps the current image on the lock screen.

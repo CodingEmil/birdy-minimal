@@ -69,9 +69,10 @@ import java.util.function.Consumer;
 public class MainActivity extends Activity {
     static final String LOWERCASE = "lowercase"; // app and group names in small letters only
     static final String HIDE_STATUS_BAR = "hideStatusBar"; // home without clock and icons at the top; on by default
-    static final String ACCENT = "accent"; // accent color on home: "white" (default) or "orange"
-    static final String ACCENT_ORANGE = "orange";
-    static final int ORANGE = 0xFFFF7A00; // a full, saturated orange that reads well on black
+    static final String ACCENT = "accent"; // accent color on home, one of ACCENT_KEYS; "white" (the default) means none
+    static final String[] ACCENT_KEYS = {"white", "orange", "green", "blue"};
+    static final String[] ACCENT_NAMES = {"Weiß", "Orange", "Grün", "Blau"};
+    static final int[] ACCENT_COLORS = {Color.WHITE, 0xFFFF7A00, 0xFF30D158, 0xFF0A84FF}; // full, saturated tones that read well on black
     static final String PREFS = "birdy"; // shared with the settings pages, which edit the keys "top", "newest", "type", "bottom", "shade" and more
     private static final int MAX_FAVORITES = 7; // apps and groups together
     private static final int TOP_COUNT = 5;
@@ -86,7 +87,8 @@ public class MainActivity extends Activity {
     private Groups groups;
     boolean statusBarHidden; // visible to tests
     private boolean lowercase; // app and group names in small letters (setting "Namen kleingeschrieben")
-    private boolean orange; // accent color "Orange": date and tapped or open groups in orange
+    private int accent; // accent color for the date and tapped or open groups; 0 for none ("Weiß")
+    private Map<String, String> customNames = new HashMap<>(); // names the user gave apps, by key
     private String openGroup; // id of the group unfolded on the home screen, or null
     private View openFirst, openLast; // its header and last row, to scroll them into view
     private boolean arranging; // home shows up/down arrows next to each entry
@@ -438,10 +440,11 @@ public class MainActivity extends Activity {
     private void load() {
         boolean newest = prefs.getBoolean("newest", false);
         lowercase = prefs.getBoolean(LOWERCASE, false);
+        customNames = AppNames.parse(prefs.getString(AppNames.KEY, ""));
         List<App> sorted = new ArrayList<>();
         apps.clear();
         for (LauncherActivityInfo info : launcherApps.getActivityList(null, Process.myUserHandle())) {
-            App app = new App(info, lowercase);
+            App app = new App(info, lowercase, customNames);
             if (newest) app.installed = info.getFirstInstallTime(); // a binder call each, so only when sorting by it
             sorted.add(app);
             apps.put(app.key, app);
@@ -590,20 +593,28 @@ public class MainActivity extends Activity {
         row.setText(groupText(group));
         row.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
         row.setContentDescription("Gruppe " + group.name + ", " + members.size() + " Apps");
-        if (orange) row.setTextColor(group.id.equals(openGroup) ? ColorStateList.valueOf(ORANGE) : ORANGE_PRESSED);
+        boolean open = group.id.equals(openGroup);
+        if (open) row.setFontVariationSettings("'wght' 500"); // a bit bolder while unfolded
+        if (accent != 0) row.setTextColor(open ? ColorStateList.valueOf(accent)
+                : new ColorStateList(new int[][] {{android.R.attr.state_pressed}, {}}, new int[] {accent, Color.WHITE}));
         row.setOnClickListener(v -> toggleGroup(group));
         row.setOnLongClickListener(v -> { showGroupMenu(v, group); return true; });
         return row;
     }
 
-    // White, orange while pressed; an open group stays orange (set in groupRow).
-    private static final ColorStateList ORANGE_PRESSED = new ColorStateList(
-            new int[][] {{android.R.attr.state_pressed}, {}}, new int[] {ORANGE, Color.WHITE});
+    // Index into ACCENT_KEYS of the saved accent; 0 ("Weiß") for none or an unknown value.
+    static int accentIndex(SharedPreferences prefs) {
+        String saved = prefs.getString(ACCENT, "");
+        for (int i = 0; i < ACCENT_KEYS.length; i++) if (ACCENT_KEYS[i].equals(saved)) return i;
+        return 0;
+    }
 
     // Date and weekday in the accent color, grey otherwise. The temperature next to it keeps its own color.
+    // Groups: white, the accent color while pressed and while unfolded (set in groupRow).
     private void applyAccent() {
-        orange = ACCENT_ORANGE.equals(prefs.getString(ACCENT, ""));
-        ((TextView) findViewById(R.id.date)).setTextColor(orange ? ORANGE : 0xFF8C8C8C);
+        int i = accentIndex(prefs);
+        accent = i == 0 ? 0 : ACCENT_COLORS[i];
+        ((TextView) findViewById(R.id.date)).setTextColor(accent != 0 ? accent : 0xFF8C8C8C);
     }
 
     private CharSequence groupText(Groups.Group group) {
@@ -858,6 +869,7 @@ public class MainActivity extends Activity {
         if (pinned && homeEntries() > 1) menu.add(0, 9, 0, "Startscreen anordnen");
         menu.add(0, 2, 0, isLeft ? "Unten links entfernen" : "Unten links");
         menu.add(0, 3, 0, isRight ? "Unten rechts entfernen" : "Unten rechts");
+        menu.add(0, 11, 0, "Umbenennen…");
         menu.add(0, 8, 0, "Zeitlimit…");
         menu.add(0, 4, 0, "App-Info");
         if ((app.info.getApplicationInfo().flags & ApplicationInfo.FLAG_SYSTEM) == 0) menu.add(0, 5, 0, "Deinstallieren");
@@ -882,6 +894,9 @@ public class MainActivity extends Activity {
                     return true;
                 case 10:
                     startArranging(inGroup);
+                    return true;
+                case 11:
+                    rename(app);
                     return true;
                 case 2:
                     prefs.edit().putString("left", isLeft ? "" : app.key).apply();
@@ -914,7 +929,7 @@ public class MainActivity extends Activity {
         popup.setOnMenuItemClickListener(item -> {
             switch (item.getItemId()) {
                 case 1: selectApps(group); break;
-                case 2: askName("Gruppe umbenennen", group.name, "Speichern", name -> { group.name = name; saveHome(); }); break;
+                case 2: askName("Gruppe umbenennen", group.name, "Name", "Speichern", name -> { group.name = Groups.cleanName(name); saveHome(); }); break;
                 case 3: confirmDelete(group); break;
                 case 4: startArranging(); break;
                 case 5: startArranging(group); break;
@@ -954,7 +969,8 @@ public class MainActivity extends Activity {
             Toast.makeText(this, "Der Startscreen ist voll. Entferne zuerst eine App oder Gruppe.", Toast.LENGTH_LONG).show();
             return;
         }
-        askName("Neue Gruppe", "", "Erstellen", name -> {
+        askName("Neue Gruppe", "", "Name", "Erstellen", raw -> {
+            String name = Groups.cleanName(raw);
             Groups.Group group = groups.create(name);
             if (first != null) group.apps.add(first.key);
             favorites.add(Groups.key(group.id));
@@ -1005,12 +1021,25 @@ public class MainActivity extends Activity {
                 .show();
     }
 
-    private void askName(String title, String initial, String action, Consumer<String> done) {
+    // Empty or the app's own name brings that name back.
+    private void rename(App app) {
+        String original = AppNames.clean(app.info.getLabel().toString());
+        String current = customNames.containsKey(app.key) ? customNames.get(app.key) : original;
+        askName("App umbenennen", current, original, "Speichern", name -> {
+            if (name.isEmpty() || name.equals(original)) customNames.remove(app.key);
+            else customNames.put(app.key, name);
+            prefs.edit().putString(AppNames.KEY, AppNames.serialize(customNames)).apply();
+            load();
+        });
+    }
+
+    // done gets the text without tabs and line breaks, trimmed, possibly empty.
+    private void askName(String title, String initial, String hint, String action, Consumer<String> done) {
         EditText input = new EditText(this);
         input.setId(R.id.group_name);
         input.setText(initial);
         input.setSelection(initial.length());
-        input.setHint("Name");
+        input.setHint(hint);
         input.setSingleLine(true);
         input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
         input.setTextColor(0xFFFFFFFF);
@@ -1023,7 +1052,7 @@ public class MainActivity extends Activity {
                 .setTitle(title)
                 .setView(box)
                 .setNegativeButton("Abbrechen", null)
-                .setPositiveButton(action, (d, which) -> done.accept(Groups.cleanName(input.getText().toString())))
+                .setPositiveButton(action, (d, which) -> done.accept(AppNames.clean(input.getText().toString())))
                 .create();
         dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
         dialog.show();
@@ -1060,10 +1089,11 @@ public class MainActivity extends Activity {
         final String label;
         long installed; // first install time, only filled when sorting by it
 
-        App(LauncherActivityInfo info, boolean lowercase) {
+        App(LauncherActivityInfo info, boolean lowercase, Map<String, String> customNames) {
             this.info = info;
             key = info.getComponentName().flattenToString();
-            String name = info.getLabel().toString();
+            String custom = customNames.get(key);
+            String name = custom != null ? custom : info.getLabel().toString();
             label = lowercase ? lower(name) : name;
         }
 

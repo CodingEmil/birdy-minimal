@@ -607,6 +607,24 @@ public class MainActivityTest {
     }
 
     @Test
+    public void renameAnAppAndBringItsNameBack() throws Exception {
+        prefs.edit().putString("favorites", key("Spotify")).commit();
+        installApps(LABELS);
+        MainActivity a = start().get();
+        homeRow(a, "Spotify").performLongClick();
+        pick("Umbenennen…");
+        assertEquals("Spotify", ((EditText) dialog().findViewById(R.id.group_name)).getText().toString());
+        enterName(" Musik ");
+        assertEquals(Arrays.asList("Musik"), homeRows(a));
+        assertEquals(key("Spotify") + "\tMusik", prefs.getString(AppNames.KEY, ""));
+        homeRow(a, "Musik").performLongClick();
+        pick("Umbenennen…");
+        enterName("");
+        assertEquals(Arrays.asList("Spotify"), homeRows(a));
+        assertEquals("", prefs.getString(AppNames.KEY, ""));
+    }
+
+    @Test
     public void emptyGroupExplainsWhatToDo() throws Exception {
         seedGroup("Neu");
         installApps(LABELS);
