@@ -28,9 +28,15 @@ final class Weather {
     static final int NONE = AppWidgetManager.INVALID_APPWIDGET_ID;
     private static final ComponentName PIXEL = new ComponentName("com.google.android.apps.weather",
             "com.google.android.apps.weather.widget.CurrentForecastWidgetReceiver");
-    // shortcut: Samsung is untested on a real device and takes any widget of the package, pin one once it was tried.
+    // Samsung Weather has several widgets; the small ones show the current temperature as text. The cover widget is
+    // for flip-phone cover screens and the others vary by One UI version, so they only come after these.
     private static final String SAMSUNG_PACKAGE = "com.sec.android.daemonapp";
+    private static final String[] SAMSUNG_PREFERRED = {
+            "com.sec.android.daemonapp.appwidget.WeatherAppWidget2x1",
+            "com.sec.android.daemonapp.appwidget.WeatherAppWidget"};
     private static final Pattern TEMPERATURE = Pattern.compile("[-−]?\\d+\\s*(°[CF]?|℃|℉)");
+    private static final Pattern NUMBER = Pattern.compile("[-−]?\\d+");
+    private static final Pattern UNIT = Pattern.compile("°[CF]?|℃|℉");
     private static final int HOST_ID = 1;
     private static final int SIZE_DP = 200; // within the widget's size range, so it shows its full layout
 
@@ -64,11 +70,23 @@ final class Weather {
     /** The weather widget on this phone, or null if there is none we know. */
     static ComponentName provider(Context context) {
         ComponentName samsung = null;
+        int samsungRank = Integer.MAX_VALUE;
         for (AppWidgetProviderInfo p : AppWidgetManager.getInstance(context).getInstalledProviders()) {
             if (PIXEL.equals(p.provider)) return p.provider;
-            if (samsung == null && SAMSUNG_PACKAGE.equals(p.provider.getPackageName())) samsung = p.provider;
+            if (!SAMSUNG_PACKAGE.equals(p.provider.getPackageName())) continue;
+            int rank = samsungRank(p.provider.getClassName());
+            if (rank < samsungRank) {
+                samsung = p.provider;
+                samsungRank = rank;
+            }
         }
         return samsung;
+    }
+
+    // Lower is better: the preferred widgets in order, then any other, then the cover widget.
+    private static int samsungRank(String className) {
+        for (int i = 0; i < SAMSUNG_PREFERRED.length; i++) if (SAMSUNG_PREFERRED[i].equals(className)) return i;
+        return className.contains("Cover") ? SAMSUNG_PREFERRED.length + 1 : SAMSUNG_PREFERRED.length;
     }
 
     private static AppWidgetHost host(Context context, Weather weather) {
@@ -97,6 +115,27 @@ final class Weather {
 
     static void delete(Context context, int id) {
         host(context, null).deleteAppWidgetId(id);
+    }
+
+    /**
+     * Earlier versions took any Samsung widget, possibly one without the temperature as text. Moves a saved widget
+     * to the better one where Android allows it without asking and it needs no setup; otherwise keeps the old one.
+     */
+    static int upgrade(Context context, int id) {
+        if (id == NONE) return id;
+        AppWidgetManager manager = AppWidgetManager.getInstance(context);
+        AppWidgetProviderInfo info = manager.getAppWidgetInfo(id);
+        if (info == null || !SAMSUNG_PACKAGE.equals(info.provider.getPackageName())) return id;
+        ComponentName best = provider(context); // lists all widgets, so only for Samsung's
+        if (best == null || best.equals(info.provider)) return id;
+        int fresh = allocate(context);
+        AppWidgetProviderInfo freshInfo = manager.bindAppWidgetIdIfAllowed(fresh, best) ? manager.getAppWidgetInfo(fresh) : null;
+        if (freshInfo == null || freshInfo.configure != null) {
+            delete(context, fresh);
+            return id;
+        }
+        delete(context, id);
+        return fresh;
     }
 
     static Intent bindDialog(Context context, int id) {
@@ -142,20 +181,38 @@ final class Weather {
 
     private void read() {
         source = temperature(widget, null);
-        label.setText(source == null ? "" : source.getText());
+        label.setText(source == null ? "" : reading(source));
         label.setVisibility(source == null ? View.GONE : View.VISIBLE);
     }
 
     // The current temperature is the largest bare "12°" in the widget; "H:14°" and error texts don't match.
+    // Some widgets (likely Samsung's) draw the number and the "°" in two views side by side; then the number counts.
     static TextView temperature(View view, TextView best) {
-        if (view instanceof TextView) {
-            TextView text = (TextView) view;
-            if (TEMPERATURE.matcher(text.getText()).matches()
-                    && (best == null || text.getTextSize() > best.getTextSize())) return text;
-        } else if (view instanceof ViewGroup) {
+        if (view instanceof ViewGroup) {
             ViewGroup group = (ViewGroup) view;
-            for (int i = 0; i < group.getChildCount(); i++) best = temperature(group.getChildAt(i), best);
+            for (int i = 0; i < group.getChildCount(); i++) {
+                View child = group.getChildAt(i);
+                if (child instanceof TextView && isTemperature((TextView) child, i + 1 < group.getChildCount() ? group.getChildAt(i + 1) : null)
+                        && (best == null || ((TextView) child).getTextSize() > best.getTextSize())) best = (TextView) child;
+                else best = temperature(child, best);
+            }
+        } else if (view instanceof TextView && isTemperature((TextView) view, null)
+                && (best == null || ((TextView) view).getTextSize() > best.getTextSize())) {
+            best = (TextView) view;
         }
         return best;
+    }
+
+    private static boolean isTemperature(TextView text, View next) {
+        String value = text.getText().toString().trim();
+        if (TEMPERATURE.matcher(value).matches()) return true;
+        return NUMBER.matcher(value).matches() && next instanceof TextView
+                && UNIT.matcher(((TextView) next).getText().toString().trim()).matches();
+    }
+
+    // What the label shows: the temperature without padding, with "°" when the widget drew it separately.
+    static String reading(TextView source) {
+        String value = source.getText().toString().trim();
+        return NUMBER.matcher(value).matches() ? value + "°" : value;
     }
 }
